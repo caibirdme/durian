@@ -1,2 +1,2 @@
 # caddy-fasthttp
-fsathttp for caddy
+fasthttp for caddy
