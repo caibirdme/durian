@@ -11,17 +11,24 @@ const (
 	defaultConcurrent = 3000
 )
 
+const (
+	FastHTTPServerType = "fasthttp"
+)
+
 func init() {
-	caddy.RegisterServerType("fasthttp", caddy.ServerType{
+	caddy.RegisterServerType(FastHTTPServerType, caddy.ServerType{
 		Directives: func() []string {return nil},
-		DefaultInput: func() caddy.Input {return nil},
+		DefaultInput: func() caddy.Input {return caddy.CaddyfileInput{
+			ServerTypeName:FastHTTPServerType,
+		}},
 		NewContext: newContext,
 	})
 }
 
+
 type fastContext struct {
 	inst *caddy.Instance
-	cfg serverConfig
+	cfg ServerConfig
 }
 
 func newContext(inst *caddy.Instance) caddy.Context {
@@ -30,8 +37,13 @@ func newContext(inst *caddy.Instance) caddy.Context {
 	}
 }
 
+func GetConfig(c *caddy.Controller) *ServerConfig {
+	f := c.Context().(*fastContext)
+	return &f.cfg
+}
+
 // serverConfig stores the configuration for fasthttp.Server
-type serverConfig struct {
+type ServerConfig struct {
 	Name string
 	Concurrency int
 	DisableKeepalive bool
@@ -48,9 +60,14 @@ type serverConfig struct {
 	DisableHeaderNamesNormalizing bool
 	NoDefaultServerHeader bool
 	NoDefaultContentType bool
+	middlewares []Middleware
 }
 
-func (cfg *serverConfig) makeServer() *fasthttp.Server {
+func (cfg *ServerConfig) AddMiddleware(m Middleware) {
+	cfg.middlewares = append(cfg.middlewares, m)
+}
+
+func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	return nil
 }
 
