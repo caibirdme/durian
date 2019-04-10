@@ -9,7 +9,7 @@ import (
 // make sure FastServer implement GracefulServer
 var _ caddy.GracefulServer = new(FastServer)
 
-func NewFastServer(cfg serverConfig) *FastServer {
+func NewFastServer(cfg ServerConfig) *FastServer {
 	srv := &FastServer{
 		Server: cfg.makeServer(),
 	}
