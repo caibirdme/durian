@@ -68,7 +68,9 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 }
 
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
-	return nil
+	return &fasthttp.Server{
+		Handler: compileMiddlewareEndWithNotFound(cfg.middlewares),
+	}
 }
 
 func (c *fastContext) InspectServerBlocks(path string, sblocks []caddyfile.ServerBlock) ([]caddyfile.ServerBlock, error) {
