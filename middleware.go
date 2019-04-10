@@ -6,8 +6,12 @@ import (
 
 type Middleware func(handler fasthttp.RequestHandler) fasthttp.RequestHandler
 
-func compileMiddleware(mList []Middleware) fasthttp.RequestHandler {
-	stack := notFound
+func compileMiddlewareEndWithNotFound(mList []Middleware) fasthttp.RequestHandler {
+	return compileMiddleware(mList, notFound)
+}
+
+func compileMiddleware(mList []Middleware, final fasthttp.RequestHandler) fasthttp.RequestHandler {
+	stack := final
 	for _,m := range mList {
 		stack = m(stack)
 	}
