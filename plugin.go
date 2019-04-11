@@ -1,10 +1,11 @@
 package caddy_fasthttp
 
 import (
+	"time"
+
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyfile"
 	"github.com/valyala/fasthttp"
-	"time"
 )
 
 const (
@@ -17,18 +18,19 @@ const (
 
 func init() {
 	caddy.RegisterServerType(FastHTTPServerType, caddy.ServerType{
-		Directives: func() []string {return nil},
-		DefaultInput: func() caddy.Input {return caddy.CaddyfileInput{
-			ServerTypeName:FastHTTPServerType,
-		}},
+		Directives: func() []string { return nil },
+		DefaultInput: func() caddy.Input {
+			return caddy.CaddyfileInput{
+				ServerTypeName: FastHTTPServerType,
+			}
+		},
 		NewContext: newContext,
 	})
 }
 
-
 type fastContext struct {
 	inst *caddy.Instance
-	cfg ServerConfig
+	cfg  ServerConfig
 }
 
 func newContext(inst *caddy.Instance) caddy.Context {
@@ -44,23 +46,23 @@ func GetConfig(c *caddy.Controller) *ServerConfig {
 
 // serverConfig stores the configuration for fasthttp.Server
 type ServerConfig struct {
-	Name string
-	Concurrency int
-	DisableKeepalive bool
-	ReadBufferSize int
-	WriteBufferSize int
-	ReadTimeout time.Duration
-	WriteTimeout time.Duration
-	MaxConnsPerIP int
-	MaxRequestsPerConn int
-	MaxKeepaliveDuration time.Duration
-	TCPKeepalive bool
-	TCPKeepalivePeriod time.Duration
-	MaxRequestBodySize int
+	Name                          string
+	Concurrency                   int
+	DisableKeepalive              bool
+	ReadBufferSize                int
+	WriteBufferSize               int
+	ReadTimeout                   time.Duration
+	WriteTimeout                  time.Duration
+	MaxConnsPerIP                 int
+	MaxRequestsPerConn            int
+	MaxKeepaliveDuration          time.Duration
+	TCPKeepalive                  bool
+	TCPKeepalivePeriod            time.Duration
+	MaxRequestBodySize            int
 	DisableHeaderNamesNormalizing bool
-	NoDefaultServerHeader bool
-	NoDefaultContentType bool
-	middlewares []Middleware
+	NoDefaultServerHeader         bool
+	NoDefaultContentType          bool
+	middlewares                   []Middleware
 }
 
 func (cfg *ServerConfig) AddMiddleware(m Middleware) {
@@ -78,5 +80,5 @@ func (c *fastContext) InspectServerBlocks(path string, sblocks []caddyfile.Serve
 }
 
 func (c *fastContext) MakeServers() ([]caddy.Server, error) {
-	return []caddy.Server{NewFastServer(c.cfg),}, nil
+	return []caddy.Server{NewFastServer(c.cfg)}, nil
 }

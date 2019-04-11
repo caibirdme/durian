@@ -11,12 +11,13 @@ const (
 
 func init() {
 	caddy.RegisterPlugin(pluginName, caddy.Plugin{
-		ServerType:super.FastHTTPServerType,
-		Action: setup,
+		ServerType: super.FastHTTPServerType,
+		Action:     setup,
 	})
 }
 
 func setup(c *caddy.Controller) error {
-	super.GetConfig(c).AddMiddleware(ProxyHandler)
+	p := &Proxy{}
+	super.GetConfig(c).AddMiddleware(p.Handle)
 	return nil
 }
