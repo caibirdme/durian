@@ -37,7 +37,7 @@ This project is in progress, blow are the current supported directives:
 
 :8012 {
     concurrency 1000  # The maximum number of concurrent connections the server may serve
-    root . # root simply specifies the root of the site
+    root / . # root simply specifies the root of the site
 }
 ```
 
