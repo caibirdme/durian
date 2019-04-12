@@ -16,6 +16,11 @@ This project is in progress, blow are the current supported directives:
         # Maximum duration for writing the full response (including body)
         write 1s
     }
+    
+    # /api/asd/hello_123 -> /foo/hello_123/other/asd
+    rewrite /api/(\w+)/(.*) {
+        to /foo/{2}/other/{1}
+    }
 
     # reverse proxy
     proxy /foo/(\w)/(.*) {
@@ -38,7 +43,7 @@ This project is in progress, blow are the current supported directives:
 
 ## Plan
 
-- [ ] rewrite
+- [x] rewrite
 - [ ] circuit breaker for reverse proxy
 - [ ] dynamic upstream for reverse proxy(watch specified file)
 - [ ] request_id
