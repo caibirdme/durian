@@ -6,5 +6,6 @@ import (
 
 	// plug in directives
 	_ "github.com/caibirdme/caddy-fasthttp/reverse_proxy"
+	_ "github.com/caibirdme/caddy-fasthttp/root"
 	_ "github.com/caibirdme/caddy-fasthttp/timeout"
 )

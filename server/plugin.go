@@ -145,4 +145,5 @@ var directives = []string{
 	"proxy",
 	"header",
 	"timeout",
+	"root",
 }

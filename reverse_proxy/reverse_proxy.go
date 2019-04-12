@@ -1,7 +1,7 @@
 package reverse_proxy
 
 import (
-	"log"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -14,7 +14,7 @@ func ProxyHandler(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 
 type Proxy struct {
 	next             fasthttp.RequestHandler
-	lb               *fasthttp.LBClient
+	client           *fasthttp.HostClient
 	check            URLMatchChecker
 	timeout          time.Duration
 	headerUpstream   []KVTuple
@@ -26,15 +26,11 @@ func NewProxy(cfg ProxyConfig) (*Proxy, error) {
 	if nil != err {
 		return nil, err
 	}
-	var lbc fasthttp.LBClient
-	for _, addr := range cfg.AddressList {
-		c := &fasthttp.HostClient{
-			Addr: addr,
-		}
-		lbc.Clients = append(lbc.Clients, c)
-	}
+	addr := strings.Join(cfg.AddressList, ",")
 	return &Proxy{
-		lb:               &lbc,
+		client: &fasthttp.HostClient{
+			Addr: addr,
+		},
 		check:            checker,
 		timeout:          cfg.Timeout,
 		headerUpstream:   cfg.UpstreamHeader,
@@ -44,9 +40,7 @@ func NewProxy(cfg ProxyConfig) (*Proxy, error) {
 
 func (p *Proxy) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(reqCtx *fasthttp.RequestCtx) {
-		log.Printf("I'm here %s\n", reqCtx.Path())
 		if !p.check.Match(reqCtx.Path()) {
-			log.Printf("%s not match\n", reqCtx.Path())
 			next(reqCtx)
 			return
 		}
@@ -55,11 +49,13 @@ func (p *Proxy) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		for _, tuple := range p.headerUpstream {
 			req.Header.Set(tuple.K, tuple.V)
 		}
-		err := p.lb.DoTimeout(req, resp, p.timeout)
-		if err == fasthttp.ErrTimeout {
-			reqCtx.TimeoutError(err.Error())
-		} else {
-			reqCtx.Error(err.Error(), fasthttp.StatusServiceUnavailable)
+		err := p.client.DoTimeout(req, resp, p.timeout)
+		if err != nil {
+			if err == fasthttp.ErrTimeout {
+				reqCtx.TimeoutError(err.Error())
+			} else {
+				reqCtx.Error(err.Error(), fasthttp.StatusServiceUnavailable)
+			}
 		}
 		for _, tuple := range p.headerDownstream {
 			resp.Header.Set(tuple.K, tuple.V)
