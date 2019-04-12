@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	defaultConcurrent = 3000
+	defaultConcurrent  = 3000
+	defaultReadTimeout = time.Second
 )
 
 const (
@@ -30,7 +31,7 @@ func init() {
 
 type fastContext struct {
 	inst *caddy.Instance
-	cfg  ServerConfig
+	cfg  []ServerConfig
 }
 
 func newContext(inst *caddy.Instance) caddy.Context {
@@ -41,11 +42,17 @@ func newContext(inst *caddy.Instance) caddy.Context {
 
 func GetConfig(c *caddy.Controller) *ServerConfig {
 	f := c.Context().(*fastContext)
-	return &f.cfg
+	for i := 0; i < len(f.cfg); i++ {
+		if f.cfg[i].Addr == c.Key {
+			return &f.cfg[i]
+		}
+	}
+	return nil
 }
 
-// serverConfig stores the configuration for fasthttp.Server
+// ServerConfig stores the configuration for fasthttp.Server
 type ServerConfig struct {
+	Addr                          string
 	Name                          string
 	Concurrency                   int
 	DisableKeepalive              bool
@@ -70,15 +77,40 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 }
 
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
-	return &fasthttp.Server{
+	srv := &fasthttp.Server{
 		Handler: compileMiddlewareEndWithNotFound(cfg.middlewares),
 	}
+	if cfg.ReadTimeout != 0 {
+		srv.ReadTimeout = cfg.ReadTimeout
+	}
+	if cfg.WriteTimeout != 0 {
+		srv.WriteTimeout = cfg.WriteTimeout
+	}
+	return srv
 }
 
 func (c *fastContext) InspectServerBlocks(path string, sblocks []caddyfile.ServerBlock) ([]caddyfile.ServerBlock, error) {
+	for _, sblock := range sblocks {
+		cfg, err := c.parseConfig(sblock)
+		if nil != err {
+			return sblocks, err
+		}
+		c.cfg = append(c.cfg, cfg)
+	}
 	return sblocks, nil
 }
 
+func (c *fastContext) parseConfig(sblock caddyfile.ServerBlock) (ServerConfig, error) {
+	cfg := ServerConfig{Addr: sblock.Keys[0]}
+	return cfg, nil
+}
+
 func (c *fastContext) MakeServers() ([]caddy.Server, error) {
-	return []caddy.Server{NewFastServer(c.cfg)}, nil
+	return []caddy.Server{NewFastServer(c.cfg[0])}, nil
+}
+
+var directives = []string{
+	"proxy",
+	"header",
+	"timeout",
 }

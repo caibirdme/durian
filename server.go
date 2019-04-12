@@ -1,9 +1,10 @@
 package caddy_fasthttp
 
 import (
+	"net"
+
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
-	"net"
 )
 
 // make sure FastServer implement GracefulServer
@@ -13,16 +14,17 @@ func NewFastServer(cfg ServerConfig) *FastServer {
 	srv := &FastServer{
 		Server: cfg.makeServer(),
 	}
+	srv.Addr = cfg.Addr
 	return srv
 }
 
 type FastServer struct {
 	*fasthttp.Server
-	addr string
+	Addr string
 }
 
 func (s *FastServer) Listen() (net.Listener, error) {
-	ln, err := net.Listen("tcp4", s.addr)
+	ln, err := net.Listen("tcp4", s.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +48,7 @@ func (s *FastServer) Serve(ln net.Listener) error {
 }
 
 func (s *FastServer) ListenPacket() (net.PacketConn, error) {
-	return nil,nil
+	return nil, nil
 }
 
 func (s *FastServer) ServePacket(net.PacketConn) error {
@@ -54,7 +56,7 @@ func (s *FastServer) ServePacket(net.PacketConn) error {
 }
 
 func (s *FastServer) Address() string {
-	return s.addr
+	return s.Addr
 }
 
 func (s *FastServer) Stop() error {
