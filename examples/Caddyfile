@@ -1,0 +1,19 @@
+:8051 {
+    timeout {
+        read 1s
+        write 1s
+    }
+    proxy /foo/(\w)/(.*) {
+        upstream {
+            localhost:8776
+            localhost:8775
+        }
+        timeout 300ms
+        header_upstream X-Foo ffoo
+        header_downstream X-Bar barbar
+    }
+}
+
+:8012 {
+    root .
+}
