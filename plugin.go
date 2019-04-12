@@ -1,6 +1,9 @@
 package caddy_fasthttp
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mholt/caddy"
@@ -86,6 +89,12 @@ func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	if cfg.WriteTimeout != 0 {
 		srv.WriteTimeout = cfg.WriteTimeout
 	}
+	if cfg.Concurrency != 0 {
+		srv.Concurrency = cfg.Concurrency
+	}
+	if cfg.DisableKeepalive {
+		srv.DisableKeepalive = true
+	}
 	return srv
 }
 
@@ -102,6 +111,29 @@ func (c *fastContext) InspectServerBlocks(path string, sblocks []caddyfile.Serve
 
 func (c *fastContext) parseConfig(sblock caddyfile.ServerBlock) (ServerConfig, error) {
 	cfg := ServerConfig{Addr: sblock.Keys[0]}
+	for key, vals := range sblock.Tokens {
+		switch strings.ToLower(key) {
+		case "concurrency":
+			if len(vals) > 0 {
+				val := vals[0].Text
+				num, err := strconv.Atoi(val)
+				if nil != err {
+					return cfg, fmt.Errorf("%+v, Err: %s", vals, err)
+				}
+				cfg.Concurrency = num
+			}
+		case "keepalive":
+			if len(vals) > 0 {
+				val := vals[0].Text
+				ok, err := strconv.ParseBool(val)
+				if nil != err {
+					return cfg, fmt.Errorf("%+v, Err: %s", vals, err)
+				}
+				// ok equals true means EnableKeepalive
+				cfg.DisableKeepalive = !ok
+			}
+		}
+	}
 	return cfg, nil
 }
 

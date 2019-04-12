@@ -12,9 +12,9 @@ var _ caddy.GracefulServer = new(FastServer)
 
 func NewFastServer(cfg ServerConfig) *FastServer {
 	srv := &FastServer{
+		Addr:   cfg.Addr,
 		Server: cfg.makeServer(),
 	}
-	srv.Addr = cfg.Addr
 	return srv
 }
 

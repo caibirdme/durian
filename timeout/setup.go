@@ -1,7 +1,6 @@
 package timeout
 
 import (
-	"fmt"
 	"time"
 
 	super "github.com/caibirdme/caddy-fasthttp"
@@ -22,7 +21,7 @@ func init() {
 func setupTimeouts(c *caddy.Controller) error {
 	cfg := super.GetConfig(c)
 	if cfg == nil {
-		return fmt.Errorf("[%s] couldn't find %s's config", pluginName, c.Key)
+		return c.Errf("[%s] couldn't find %s's config", pluginName, c.Key)
 	}
 
 	for c.Next() {
