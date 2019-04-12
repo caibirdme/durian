@@ -1,15 +1,16 @@
 package reverse_proxy
 
 import (
+	"log"
 	"strings"
 	"time"
 
-	super "github.com/caibirdme/caddy-fasthttp"
+	super "github.com/caibirdme/caddy-fasthttp/server"
 	"github.com/mholt/caddy"
 )
 
 const (
-	pluginName = "reverse_proxy"
+	pluginName = "proxy"
 )
 
 func init() {
@@ -24,6 +25,7 @@ func setup(c *caddy.Controller) error {
 	if nil != err {
 		return err
 	}
+	log.Println(cfg)
 	p, err := NewProxy(*cfg)
 	if nil != err {
 		return err
@@ -45,18 +47,21 @@ type ProxyConfig struct {
 }
 
 func parseProxy(c *caddy.Controller) (*ProxyConfig, error) {
+	// proxy
+	if !c.NextArg() {
+		return nil, c.ArgErr()
+	}
+	// load pattern
+	if !c.NextArg() {
+		return nil, c.ArgErr()
+	}
 	cfg := ProxyConfig{}
-	for c.Next() {
-		if !c.NextArg() {
-			return nil, c.Errf("[%s] url pattern is needed", pluginName)
-		}
-		cfg.Pattern = c.Val()
-		for c.NextBlock() {
-			kind := c.Val()
-			err := parseKind(kind, &cfg, c)
-			if nil != err {
-				return nil, err
-			}
+	cfg.Pattern = c.Val()
+	for c.NextBlock() {
+		kind := c.Val()
+		err := parseKind(kind, &cfg, c)
+		if nil != err {
+			return nil, err
 		}
 	}
 	return &cfg, nil
@@ -104,9 +109,17 @@ func parseKVTuple(c *caddy.Controller, cfg *[]KVTuple) error {
 	return nil
 }
 
+// due to bug of Dispender, this is a workaround
 func parseUpstream(c *caddy.Controller, cfg *ProxyConfig) error {
-	for c.NextBlock() {
+	// {
+	if !c.Next() {
+		return c.ArgErr()
+	}
+	for c.Next() {
 		address := c.Val()
+		if address == "}" {
+			break
+		}
 		cfg.AddressList = append(cfg.AddressList, address)
 	}
 	if len(cfg.AddressList) == 0 {

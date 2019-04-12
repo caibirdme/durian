@@ -1,4 +1,4 @@
-package caddy_fasthttp
+package server
 
 import (
 	"github.com/valyala/fasthttp"
@@ -12,7 +12,7 @@ func compileMiddlewareEndWithNotFound(mList []Middleware) fasthttp.RequestHandle
 
 func compileMiddleware(mList []Middleware, final fasthttp.RequestHandler) fasthttp.RequestHandler {
 	stack := final
-	for _,m := range mList {
+	for _, m := range mList {
 		stack = m(stack)
 	}
 	return stack

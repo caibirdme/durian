@@ -1,6 +1,7 @@
 package reverse_proxy
 
 import (
+	"log"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -43,7 +44,9 @@ func NewProxy(cfg ProxyConfig) (*Proxy, error) {
 
 func (p *Proxy) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(reqCtx *fasthttp.RequestCtx) {
+		log.Printf("I'm here %s\n", reqCtx.Path())
 		if !p.check.Match(reqCtx.Path()) {
+			log.Printf("%s not match\n", reqCtx.Path())
 			next(reqCtx)
 			return
 		}

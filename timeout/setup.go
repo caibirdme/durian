@@ -3,7 +3,7 @@ package timeout
 import (
 	"time"
 
-	super "github.com/caibirdme/caddy-fasthttp"
+	super "github.com/caibirdme/caddy-fasthttp/server"
 	"github.com/mholt/caddy"
 )
 
