@@ -138,7 +138,11 @@ func (c *fastContext) parseConfig(sblock caddyfile.ServerBlock) (ServerConfig, e
 }
 
 func (c *fastContext) MakeServers() ([]caddy.Server, error) {
-	return []caddy.Server{NewFastServer(c.cfg[0])}, nil
+	var servers []caddy.Server
+	for _, cfg := range c.cfg {
+		servers = append(servers, NewFastServer(cfg))
+	}
+	return servers, nil
 }
 
 var directives = []string{
