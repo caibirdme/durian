@@ -13,7 +13,7 @@ func TestURLRewriter_Rewrite(t *testing.T) {
 	}{
 		{
 			from: `/foo/\w+/(.*)/qq`,
-			to: "/tmp/$1/some",
+			to: "/tmp/{1}/some",
 			cases: [][2]string{
 				[2]string{"/foo/wqe/tony/qq", "/tmp/tony/some"},
 				{"/foo/wqe/john/qq", "/tmp/john/some"},
@@ -21,7 +21,7 @@ func TestURLRewriter_Rewrite(t *testing.T) {
 		},
 		{
 			from: `/a/(123.*)/(.*)`,
-			to: "/$2/$1",
+			to: "/{2}/{1}",
 			cases: [][2]string{
 				[2]string{"/a/12345/hello", "/hello/12345"},
 				{"/a/123come_on/foobar", "/foobar/123come_on"},
@@ -29,7 +29,7 @@ func TestURLRewriter_Rewrite(t *testing.T) {
 		},
 		{
 			from: `/a/(1.*)/(.*)`,
-			to: "/$2/$1/$1_$2",
+			to: "/{2}/{1}/{1}_{2}",
 			cases: [][2]string{
 				[2]string{"/a/12/h", "/h/12/12_h"},
 			},

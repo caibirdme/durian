@@ -20,9 +20,10 @@ func (u *URLRewriter) Rewrite(path []byte) ([]byte, bool) {
 	}
 	count := len(res)-1;
 	ans := []byte(u.to)
-	var dollar = []byte("$")
+	var dollar = []byte("{")
 	for i:=1; i<=count; i++ {
 		t := strconv.AppendInt(dollar[:1], int64(i), 10)
+		t = append(t, '}')
 		ans = bytes.ReplaceAll(ans, t, res[i])
 	}
 	return ans, true
