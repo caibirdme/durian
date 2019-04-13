@@ -182,6 +182,25 @@ timeout {
 }
 ```
 
+### header
+set extra header to request
+#### syntax
+```
+header path key val
+
+header path {
+    key1 val1
+    key2 val2
+    #...
+}
+```
+#### example
+```
+header / {
+    X-Server caddy_fast
+}
+```
+
 ## Plan
 
 - [x] rewrite
