@@ -1,6 +1,6 @@
 :8051 {
     timeout {
-        read 1s
+        read 10s
         write 1s
     }
     response {

@@ -12,11 +12,6 @@ import (
 )
 
 const (
-	defaultConcurrent  = 3000
-	defaultReadTimeout = time.Second
-)
-
-const (
 	FastHTTPServerType = "fasthttp"
 )
 
@@ -57,6 +52,7 @@ func GetConfig(c *caddy.Controller) *ServerConfig {
 type ServerConfig struct {
 	Addr                          string
 	Name                          string
+	Timeout time.Duration
 	Concurrency                   int
 	DisableKeepalive              bool
 	ReadBufferSize                int
@@ -79,9 +75,16 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 	cfg.middlewares = append(cfg.middlewares, m)
 }
 
+var (
+	defaultReadTimeout = 30*time.Second
+	defaultWriteTimeout = 5*time.Second
+)
+
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	srv := &fasthttp.Server{
 		Handler: compileMiddlewareEndWithNotFound(cfg.middlewares),
+		ReadTimeout:defaultReadTimeout,
+		WriteTimeout:defaultWriteTimeout,
 	}
 	if cfg.ReadTimeout != 0 {
 		srv.ReadTimeout = cfg.ReadTimeout

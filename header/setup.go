@@ -1,10 +1,10 @@
 package header
 
 import (
+	"bytes"
 	super "github.com/caibirdme/caddy-fasthttp/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
-	"bytes"
 )
 
 func init() {
