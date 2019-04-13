@@ -151,4 +151,5 @@ var directives = []string{
 	"timeout",
 	"root",
 	"rewrite",
+	"status",
 }

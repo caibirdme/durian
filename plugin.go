@@ -8,5 +8,6 @@ import (
 	_ "github.com/caibirdme/caddy-fasthttp/reverse_proxy"
 	_ "github.com/caibirdme/caddy-fasthttp/rewrite"
 	_ "github.com/caibirdme/caddy-fasthttp/root"
+	_ "github.com/caibirdme/caddy-fasthttp/status"
 	_ "github.com/caibirdme/caddy-fasthttp/timeout"
 )
