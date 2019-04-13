@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	caddy.RegisterPlugin("rewrite", caddy.Plugin{
+	caddy.RegisterPlugin(super.DirectiveRewrite, caddy.Plugin{
 		ServerType:super.FastHTTPServerType,
 		Action:setup,
 	})

@@ -14,7 +14,7 @@ const (
 )
 
 func init() {
-	caddy.RegisterPlugin(pluginName, caddy.Plugin{
+	caddy.RegisterPlugin(super.DirectiveProxy, caddy.Plugin{
 		ServerType: super.FastHTTPServerType,
 		Action:     setup,
 	})
@@ -34,15 +34,12 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-type KVTuple struct {
-	K, V string
-}
 
 type ProxyConfig struct {
 	Pattern          string
 	AddressList      []string
-	UpstreamHeader   []KVTuple
-	DownstreamHeader []KVTuple
+	UpstreamHeader   []super.KVTuple
+	DownstreamHeader []super.KVTuple
 	Timeout          time.Duration
 }
 
@@ -100,12 +97,12 @@ func parseKind(kind string, cfg *ProxyConfig, c *caddy.Controller) error {
 	return nil
 }
 
-func parseKVTuple(c *caddy.Controller, cfg *[]KVTuple) error {
+func parseKVTuple(c *caddy.Controller, cfg *[]super.KVTuple) error {
 	var k, v string
 	if !c.Args(&k, &v) {
 		return c.ArgErr()
 	}
-	*cfg = append(*cfg, KVTuple{K: k, V: v})
+	*cfg = append(*cfg, super.KVTuple{K: k, V: v})
 	return nil
 }
 

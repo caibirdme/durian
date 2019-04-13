@@ -3,9 +3,9 @@
         read 1s
         write 1s
     }
-    root /bar {
-        dir .
-        compress
-        index index.html
+    response {
+        pattern /foo/.*
+        body "{\"name\": \"caibirdme\",\"age\":25}"
+        content_type Application/json
     }
 }

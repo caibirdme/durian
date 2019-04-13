@@ -146,10 +146,21 @@ func (c *fastContext) MakeServers() ([]caddy.Server, error) {
 }
 
 var directives = []string{
-	"proxy",
-	"header",
-	"timeout",
-	"root",
-	"rewrite",
-	"status",
+	DirectiveProxy,
+	DirectiveHeader,
+	DirectiveTimeout,
+	DirectiveRoot,
+	DirectiveRewrite,
+	DirectiveStatus,
+	DirectiveResponse,
 }
+
+const (
+	DirectiveProxy = "proxy"
+	DirectiveHeader = "header"
+	DirectiveTimeout = "timeout"
+	DirectiveRoot = "root"
+	DirectiveRewrite = "rewrite"
+	DirectiveStatus = "status"
+	DirectiveResponse = "response"
+)

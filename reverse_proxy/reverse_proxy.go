@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	super "github.com/caibirdme/caddy-fasthttp/server"
+
 )
 
 func ProxyHandler(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -17,8 +19,8 @@ type Proxy struct {
 	client           *fasthttp.HostClient
 	check            URLMatchChecker
 	timeout          time.Duration
-	headerUpstream   []KVTuple
-	headerDownstream []KVTuple
+	headerUpstream   []super.KVTuple
+	headerDownstream []super.KVTuple
 }
 
 func NewProxy(cfg ProxyConfig) (*Proxy, error) {

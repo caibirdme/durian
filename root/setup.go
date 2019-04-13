@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	caddy.RegisterPlugin("root", caddy.Plugin{
+	caddy.RegisterPlugin(super.DirectiveRoot, caddy.Plugin{
 		ServerType: super.FastHTTPServerType,
 		Action:     setup,
 	})
