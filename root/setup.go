@@ -16,26 +16,20 @@ func init() {
 }
 
 func setup(c *caddy.Controller) error {
-	// skip root
-	c.Next()
-
-	// prefix
-	if !c.NextArg() {
-		return c.ArgErr()
-	}
-	prefix := c.Val()
-
-	// root dir
-	if !c.NextArg() {
-		return c.ArgErr()
+	cfg := RootConfig{}
+	err := parseRoot(c, &cfg)
+	if err != nil {
+		return err
 	}
 	fs := &fasthttp.FS{
-		Root: c.Val(),
+		Root: cfg.Root,
+		Compress:cfg.Compress,
+		IndexNames:cfg.Index,
 	}
-	if prefix != "/" {
-		fs.PathRewrite = fasthttp.NewPathPrefixStripper(len(strings.TrimRight(prefix, "/")))
+	if cfg.prefix != "/" {
+		fs.PathRewrite = fasthttp.NewPathPrefixStripper(len(strings.TrimRight(cfg.prefix, "/")))
 	}
-	prefixBytes := []byte(prefix)
+	prefixBytes := []byte(cfg.prefix)
 	process := fs.NewRequestHandler()
 	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
@@ -47,5 +41,49 @@ func setup(c *caddy.Controller) error {
 		}
 	})
 
+	return nil
+}
+
+type RootConfig struct {
+	prefix string
+	Root string
+	Index []string
+	Compress bool
+}
+
+func parseRoot(c *caddy.Controller, cfg *RootConfig) error {
+	// skip root
+	c.Next()
+
+	// prefix
+	if !c.NextArg() {
+		return c.ArgErr()
+	}
+	cfg.prefix = c.Val()
+	hasBlock := false
+	for c.NextBlock() {
+		hasBlock = true
+		kind := c.Val()
+		switch strings.ToLower(kind) {
+		case "dir":
+			if !c.NextArg() {
+				return c.ArgErr()
+			}
+			cfg.Root = c.Val()
+		case "compress":
+			cfg.Compress = true
+		case "index":
+			for c.NextArg() {
+				cfg.Index = append(cfg.Index, c.Val())
+			}
+		}
+	}
+	if !hasBlock {
+		// root dir
+		if !c.NextArg() {
+			return c.ArgErr()
+		}
+		cfg.Root = c.Val()
+	}
 	return nil
 }
