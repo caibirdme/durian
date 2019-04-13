@@ -4,9 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/valyala/fasthttp"
 	super "github.com/caibirdme/caddy-fasthttp/server"
-
+	"github.com/valyala/fasthttp"
 )
 
 func ProxyHandler(next fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -24,15 +23,25 @@ type Proxy struct {
 }
 
 func NewProxy(cfg ProxyConfig) (*Proxy, error) {
-	checker, err := NewRegexpMatcher(cfg.Pattern)
+	var checker URLMatchChecker
+	var err error
+	if cfg.Pattern != "" {
+		checker, err = NewRegexpMatcher(cfg.Pattern)
+	} else {
+		checker, err = NewPrefixChecker(cfg.Path)
+	}
 	if nil != err {
 		return nil, err
 	}
 	addr := strings.Join(cfg.AddressList, ",")
+	client := &fasthttp.HostClient{
+		Addr: addr,
+	}
+	if cfg.MaxConn > 0 {
+		client.SetMaxConns(cfg.MaxConn)
+	}
 	return &Proxy{
-		client: &fasthttp.HostClient{
-			Addr: addr,
-		},
+		client:           client,
 		check:            checker,
 		timeout:          cfg.Timeout,
 		headerUpstream:   cfg.UpstreamHeader,
@@ -46,12 +55,11 @@ func (p *Proxy) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 			next(reqCtx)
 			return
 		}
-		req := &reqCtx.Request
-		resp := &reqCtx.Response
 		for _, tuple := range p.headerUpstream {
-			req.Header.Set(tuple.K, tuple.V)
+			reqCtx.Request.Header.Set(tuple.K, tuple.V)
 		}
-		err := p.client.DoTimeout(req, resp, p.timeout)
+
+		err := p.client.DoTimeout(&reqCtx.Request, &reqCtx.Response, p.timeout)
 		if err != nil {
 			if err == fasthttp.ErrTimeout {
 				reqCtx.TimeoutError(err.Error())
@@ -60,7 +68,7 @@ func (p *Proxy) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 			}
 		}
 		for _, tuple := range p.headerDownstream {
-			resp.Header.Set(tuple.K, tuple.V)
+			reqCtx.Response.Header.Set(tuple.K, tuple.V)
 		}
 	}
 }

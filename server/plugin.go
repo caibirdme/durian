@@ -52,7 +52,6 @@ func GetConfig(c *caddy.Controller) *ServerConfig {
 type ServerConfig struct {
 	Addr                          string
 	Name                          string
-	Timeout time.Duration
 	Concurrency                   int
 	DisableKeepalive              bool
 	ReadBufferSize                int
@@ -83,14 +82,9 @@ var (
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	srv := &fasthttp.Server{
 		Handler: compileMiddlewareEndWithNotFound(cfg.middlewares),
-		ReadTimeout:defaultReadTimeout,
-		WriteTimeout:defaultWriteTimeout,
 	}
-	if cfg.ReadTimeout != 0 {
-		srv.ReadTimeout = cfg.ReadTimeout
-	}
-	if cfg.WriteTimeout != 0 {
-		srv.WriteTimeout = cfg.WriteTimeout
+	if d := cfg.MaxKeepaliveDuration; d != 0 {
+		srv.MaxKeepaliveDuration = d
 	}
 	if cfg.Concurrency != 0 {
 		srv.Concurrency = cfg.Concurrency

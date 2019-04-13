@@ -1,7 +1,7 @@
 package reverse_proxy
 
 import (
-	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,7 +25,6 @@ func setup(c *caddy.Controller) error {
 	if nil != err {
 		return err
 	}
-	log.Println(cfg)
 	p, err := NewProxy(*cfg)
 	if nil != err {
 		return err
@@ -37,23 +36,24 @@ func setup(c *caddy.Controller) error {
 
 type ProxyConfig struct {
 	Pattern          string
+	Path string
 	AddressList      []string
 	UpstreamHeader   []super.KVTuple
 	DownstreamHeader []super.KVTuple
 	Timeout          time.Duration
+	MaxConn int
 }
+
+var (
+	defaultTimeout = 2*time.Second
+)
 
 func parseProxy(c *caddy.Controller) (*ProxyConfig, error) {
 	// proxy
 	if !c.NextArg() {
 		return nil, c.ArgErr()
 	}
-	// load pattern
-	if !c.NextArg() {
-		return nil, c.ArgErr()
-	}
-	cfg := ProxyConfig{}
-	cfg.Pattern = c.Val()
+	cfg := ProxyConfig{Timeout:defaultTimeout,}
 	for c.NextBlock() {
 		kind := c.Val()
 		err := parseKind(kind, &cfg, c)
@@ -91,6 +91,31 @@ func parseKind(kind string, cfg *ProxyConfig, c *caddy.Controller) error {
 		if nil != err {
 			return err
 		}
+	case "pattern":
+		if !c.NextArg() {
+			return c.Errf("[%s] need pattern value", pluginName)
+		}
+		if cfg.Path != "" {
+			return c.Err("path and pattern is exclusively required")
+		}
+		cfg.Pattern = c.Val()
+	case "path":
+		if !c.NextArg() {
+			return c.Err("need path value")
+		}
+		if cfg.Pattern != "" {
+			return c.Err("path and pattern is exclusively required")
+		}
+		cfg.Path = c.Val()
+	case "max_conn":
+		if !c.NextArg() {
+			return c.Err("need path value")
+		}
+		max_conn,err := strconv.Atoi(c.Val())
+		if err != nil {
+			return c.Err(err.Error())
+		}
+		cfg.MaxConn = max_conn
 	default:
 		return c.Errf("[%s] illegal directive %s", pluginName, kind)
 	}

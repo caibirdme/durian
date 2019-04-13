@@ -10,11 +10,7 @@ This project is in progress, blow are the current supported directives:
 :8051 {
     # set timeout for server
     timeout {
-        #Maximum duration for reading the full request (including body)
-        # This also limits the maximum duration for idle keep-alive connections
-        read 1s
-        # Maximum duration for writing the full response (including body)
-        write 1s
+        keep_alive 30s
     }
     
     status 400 /abc
@@ -92,19 +88,25 @@ proxy requests to upstreams
 
 #### syntax
 ```
-proxy pattern {
+proxy {
     subdirecitves
     #...
 }
 ```
 #### Subdirectives
+* `pattern string`: url pattern to match
+* `path string`: url prefix to match
 * `upstream block`: specify upstream address, one address per line. The address is the form of `ip:port`
 * `timeout duration`: timeout for waiting upstream response
 * `header_upstream string string`: header added to upstream
 * `header_downstream string string`: header added to downstream
+* `max_conn int`: max connections to keep for upstream
+
+note: pattern and path is exclusively required
 #### examples
 ```
-proxy /foo/bar/.* {
+proxy {
+    pattern /foo/bar/.* 
     upstream {
         10.10.18.3:8000
         10.10.19.4:7000
@@ -114,6 +116,7 @@ proxy /foo/bar/.* {
     header_upstream X-Other ttt
     header_downstream X-Bar "hello client"
     header_downstream Access-Control-Allow-Origin *
+    max_conn 1000
 }
 ```
 Randomly reverse proxy request /foo/bar/xxx to 10.10.18.3:8000 or 10.10.19.4:7000
@@ -172,13 +175,11 @@ timeout {
 }
 ```
 #### subdirectives
-* `read duration`: set readTimeout
-* `write duration`: set writeTimeout
+* `keep_alive duration`: set keepalive duration
 #### example
 ```
 timeout {
-    read 1s
-    write 800ms
+    keep_alive 30s
 }
 ```
 
@@ -209,3 +210,67 @@ header / {
 - [ ] request_id
 - [ ] rate limit
 - [ ] many other directives caddy supported yet...
+
+## Benchmark
+
+### machine
+```
+CPU: i7-8700 12cores 3.2GHz
+MEM: 16G
+OS: Linux caibirdme-MS-7B53 4.15.0-47-generic #50-Ubuntu SMP Wed Mar 13 10:44:52 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+```
+
+### upstream server sleep 50ms
+
+#### caddy-fasthttp
+##### Caddyfile
+```
+:8051
+proxy {
+    path /foo
+    upstream {
+        localhost:9001
+        localhost:9002
+    }
+    max_conn 1000
+}
+```
+##### test command
+`wrk -c950 -t2 -d20s http://localhost:8051/foo/bar`
+##### result
+```
+Running 20s test @ http://localhost:8051/foo/bar
+  2 threads and 950 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    50.59ms  635.91us  70.82ms   95.06%
+    Req/Sec     9.41k   355.56     9.60k    97.50%
+  374795 requests in 20.09s, 63.62MB read
+Requests/sec:  18651.61
+Transfer/sec:      3.17MB
+```
+#### caddy
+##### caddyfile
+```
+:8051
+
+proxy /foo localhost:9001 localhost:9002
+```
+##### test command
+`wrk -c950 -t2 -d20s http://localhost:8051/foo/bar`
+##### result
+```
+Running 20s test @ http://localhost:8051/foo/bar
+  2 threads and 950 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   270.50ms  364.35ms   2.00s    86.32%
+    Req/Sec     2.34k     2.72k    9.60k    84.78%
+  89122 requests in 20.07s, 14.89MB read
+  Socket errors: connect 0, read 0, write 0, timeout 1369
+  Non-2xx or 3xx responses: 1178
+Requests/sec:   4440.60
+Transfer/sec:    759.75KB
+```
+
+#### conclusion
+From the benchmark above, caddy-fasthttp is more than 4 times faster than caddy.
+More benchmarks are on the way...
