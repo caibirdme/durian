@@ -17,6 +17,8 @@ This project is in progress, blow are the current supported directives:
         write 1s
     }
     
+    status 400 /abc
+    
     # /api/asd/hello_123 -> /foo/hello_123/other/asd
     rewrite /api/(\w+)/(.*) {
         to /foo/{2}/other/{1}

@@ -3,21 +3,9 @@
         read 1s
         write 1s
     }
-    rewrite /(\w+)t/(.*) {
-        to /foo/{1}/{2}
-    }
     root /bar {
         dir .
         compress
         index index.html
-    }
-    proxy /foo/(\w+)/(.*) {
-        upstream {
-            localhost:8776
-            localhost:8775
-        }
-        timeout 300ms
-        header_upstream X-Foo ffoooooooasd
-        header_downstream X-Bar barbar
     }
 }

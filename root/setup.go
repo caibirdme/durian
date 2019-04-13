@@ -15,6 +15,10 @@ func init() {
 	})
 }
 
+var (
+	rootPath = []byte("/")
+)
+
 func setup(c *caddy.Controller) error {
 	cfg := RootConfig{}
 	err := parseRoot(c, &cfg)
@@ -27,7 +31,15 @@ func setup(c *caddy.Controller) error {
 		IndexNames:cfg.Index,
 	}
 	if cfg.prefix != "/" {
-		fs.PathRewrite = fasthttp.NewPathPrefixStripper(len(strings.TrimRight(cfg.prefix, "/")))
+		stripper := fasthttp.NewPathPrefixStripper(len(strings.TrimRight(cfg.prefix, "/")))
+		fs.PathRewrite = func(ctx *fasthttp.RequestCtx) []byte {
+			newPath := stripper(ctx)
+			if len(newPath) == 0 {
+				return rootPath
+			} else {
+				return newPath
+			}
+		}
 	}
 	prefixBytes := []byte(cfg.prefix)
 	process := fs.NewRequestHandler()

@@ -10,6 +10,7 @@ import (
 )
 
 func init() {
+	caddy.TrapSignals()
 	// configure default caddyfile
 	caddy.SetDefaultCaddyfileLoader("default", caddy.LoaderFunc(defaultLoader))
 }
