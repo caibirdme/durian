@@ -28,7 +28,7 @@ func setupTimeouts(c *caddy.Controller) error {
 		kind := c.Val()
 		switch strings.ToLower(kind) {
 		case "keep_alive":
-			d,err := time.ParseDuration(c.Val())
+			d, err := time.ParseDuration(c.Val())
 			if err != nil {
 				return c.Err(err.Error())
 			}

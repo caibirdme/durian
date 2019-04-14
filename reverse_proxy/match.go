@@ -21,6 +21,6 @@ func (p *PrefixChecker) Match(urlPath []byte) bool {
 	return bytes.HasPrefix(urlPath, p.prefix)
 }
 
-func NewPrefixChecker(prefix string) (URLMatchChecker,error) {
-	return &PrefixChecker{prefix:[]byte(prefix),},nil
+func NewPrefixChecker(prefix string) (URLMatchChecker, error) {
+	return &PrefixChecker{prefix: []byte(prefix)}, nil
 }

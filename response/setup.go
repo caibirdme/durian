@@ -11,28 +11,28 @@ import (
 )
 
 var (
-	defaultStatusCode = 200
+	defaultStatusCode  = 200
 	defaultContentType = "text/html; charset=utf-8"
 )
 
 func init() {
 	caddy.RegisterPlugin(super.DirectiveResponse, caddy.Plugin{
-		ServerType:super.FastHTTPServerType,
-		Action:setup,
+		ServerType: super.FastHTTPServerType,
+		Action:     setup,
 	})
 }
 
 type RespConfig struct {
-	Path string
-	Pattern string
-	Code int
-	Body string
+	Path        string
+	Pattern     string
+	Code        int
+	Body        string
 	ContentType string
-	Headers []super.KVTuple
+	Headers     []super.KVTuple
 }
 
 func setup(c *caddy.Controller) error {
-	cfg,err := parseCfg(c)
+	cfg, err := parseCfg(c)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func outputDirectly(ctx *fasthttp.RequestCtx, cfg *RespConfig) {
 	ctx.SetStatusCode(cfg.Code)
 	ctx.SetBodyString(cfg.Body)
 	ctx.SetContentType(cfg.ContentType)
-	for _,item := range cfg.Headers {
+	for _, item := range cfg.Headers {
 		ctx.Response.Header.Set(item.K, item.V)
 	}
 }
@@ -77,8 +77,8 @@ func parseCfg(c *caddy.Controller) (*RespConfig, error) {
 	// skip response keyword
 	c.Next()
 	cfg := RespConfig{
-		Code:defaultStatusCode,
-		ContentType:defaultContentType,
+		Code:        defaultStatusCode,
+		ContentType: defaultContentType,
 	}
 	for c.NextBlock() {
 		kind := c.Val()
@@ -87,7 +87,7 @@ func parseCfg(c *caddy.Controller) (*RespConfig, error) {
 			if !c.NextArg() {
 				return nil, c.ArgErr()
 			}
-			code,err := strconv.Atoi(c.Val())
+			code, err := strconv.Atoi(c.Val())
 			if err != nil {
 				return nil, c.Err(err.Error())
 			}
@@ -103,11 +103,11 @@ func parseCfg(c *caddy.Controller) (*RespConfig, error) {
 			}
 			cfg.Body = strings.Trim(c.Val(), `"`)
 		case "header":
-			var k,v string
-			if !c.Args(&k,&v) {
+			var k, v string
+			if !c.Args(&k, &v) {
 				return nil, c.ArgErr()
 			}
-			cfg.Headers = append(cfg.Headers, super.KVTuple{K:k, V:v,})
+			cfg.Headers = append(cfg.Headers, super.KVTuple{K: k, V: v})
 		case "pattern":
 			if !c.NextArg() {
 				return nil, c.ArgErr()

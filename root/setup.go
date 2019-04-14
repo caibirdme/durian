@@ -26,9 +26,9 @@ func setup(c *caddy.Controller) error {
 		return err
 	}
 	fs := &fasthttp.FS{
-		Root: cfg.Root,
-		Compress:cfg.Compress,
-		IndexNames:cfg.Index,
+		Root:       cfg.Root,
+		Compress:   cfg.Compress,
+		IndexNames: cfg.Index,
 	}
 	if cfg.prefix != "/" {
 		stripper := fasthttp.NewPathPrefixStripper(len(strings.TrimRight(cfg.prefix, "/")))
@@ -57,9 +57,9 @@ func setup(c *caddy.Controller) error {
 }
 
 type RootConfig struct {
-	prefix string
-	Root string
-	Index []string
+	prefix   string
+	Root     string
+	Index    []string
 	Compress bool
 }
 

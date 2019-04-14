@@ -48,6 +48,11 @@ func GetConfig(c *caddy.Controller) *ServerConfig {
 	return nil
 }
 
+type GzipConfig struct {
+	Open  bool
+	Level int
+}
+
 // ServerConfig stores the configuration for fasthttp.Server
 type ServerConfig struct {
 	Addr                          string
@@ -67,6 +72,7 @@ type ServerConfig struct {
 	DisableHeaderNamesNormalizing bool
 	NoDefaultServerHeader         bool
 	NoDefaultContentType          bool
+	Gzip                          GzipConfig
 	middlewares                   []Middleware
 }
 
@@ -74,14 +80,11 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 	cfg.middlewares = append(cfg.middlewares, m)
 }
 
-var (
-	defaultReadTimeout = 30*time.Second
-	defaultWriteTimeout = 5*time.Second
-)
-
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
+	handler := compileMiddlewareEndWithNotFound(cfg.middlewares)
+	handler = NewGzipMiddleware(cfg.Gzip)(handler)
 	srv := &fasthttp.Server{
-		Handler: compileMiddlewareEndWithNotFound(cfg.middlewares),
+		Handler: handler,
 	}
 	if d := cfg.MaxKeepaliveDuration; d != 0 {
 		srv.MaxKeepaliveDuration = d
@@ -143,6 +146,7 @@ func (c *fastContext) MakeServers() ([]caddy.Server, error) {
 }
 
 var directives = []string{
+	DirectiveGzip,
 	DirectiveProxy,
 	DirectiveHeader,
 	DirectiveTimeout,
@@ -153,11 +157,12 @@ var directives = []string{
 }
 
 const (
-	DirectiveProxy = "proxy"
-	DirectiveHeader = "header"
-	DirectiveTimeout = "timeout"
-	DirectiveRoot = "root"
-	DirectiveRewrite = "rewrite"
-	DirectiveStatus = "status"
+	DirectiveProxy    = "proxy"
+	DirectiveHeader   = "header"
+	DirectiveTimeout  = "timeout"
+	DirectiveRoot     = "root"
+	DirectiveRewrite  = "rewrite"
+	DirectiveStatus   = "status"
 	DirectiveResponse = "response"
+	DirectiveGzip     = "gzip"
 )

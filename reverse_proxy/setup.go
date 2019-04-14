@@ -33,19 +33,18 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-
 type ProxyConfig struct {
 	Pattern          string
-	Path string
+	Path             string
 	AddressList      []string
 	UpstreamHeader   []super.KVTuple
 	DownstreamHeader []super.KVTuple
 	Timeout          time.Duration
-	MaxConn int
+	MaxConn          int
 }
 
 var (
-	defaultTimeout = 2*time.Second
+	defaultTimeout = 2 * time.Second
 )
 
 func parseProxy(c *caddy.Controller) (*ProxyConfig, error) {
@@ -53,7 +52,7 @@ func parseProxy(c *caddy.Controller) (*ProxyConfig, error) {
 	if !c.NextArg() {
 		return nil, c.ArgErr()
 	}
-	cfg := ProxyConfig{Timeout:defaultTimeout,}
+	cfg := ProxyConfig{Timeout: defaultTimeout}
 	for c.NextBlock() {
 		kind := c.Val()
 		err := parseKind(kind, &cfg, c)
@@ -111,7 +110,7 @@ func parseKind(kind string, cfg *ProxyConfig, c *caddy.Controller) error {
 		if !c.NextArg() {
 			return c.Err("need path value")
 		}
-		max_conn,err := strconv.Atoi(c.Val())
+		max_conn, err := strconv.Atoi(c.Val())
 		if err != nil {
 			return c.Err(err.Error())
 		}

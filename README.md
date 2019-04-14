@@ -13,6 +13,10 @@ This project is in progress, blow are the current supported directives:
         keep_alive 30s
     }
     
+    gzip {
+        level 6
+    }
+    
     status 400 /abc
     
     # /api/asd/hello_123 -> /foo/hello_123/other/asd
@@ -21,7 +25,8 @@ This project is in progress, blow are the current supported directives:
     }
 
     # reverse proxy
-    proxy /foo/(\w)/(.*) {
+    proxy {
+        pattern /foo/(\w)/(.*) 
         upstream {
             localhost:8776
             localhost:8775
@@ -201,6 +206,26 @@ header / {
     X-Server caddy_fast
 }
 ```
+
+### Gzip
+enable gzip if request contains gzip related header
+#### syntax
+```
+gzip #default level 6
+
+gzip {
+    subdirectives
+    #...
+}
+```
+#### subdirectives
+* `level int`: set gzip level
+#### example
+```
+gzip {
+    level 7
+}
+``` 
 
 ## Plan
 

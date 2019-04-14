@@ -10,7 +10,7 @@ import (
 //Rewriter ...
 type URLRewriter struct {
 	from *regexp.Regexp
-	to string
+	to   string
 }
 
 func (u *URLRewriter) Rewrite(path []byte) ([]byte, bool) {
@@ -18,10 +18,10 @@ func (u *URLRewriter) Rewrite(path []byte) ([]byte, bool) {
 	if len(res) == 0 {
 		return nil, false
 	}
-	count := len(res)-1;
+	count := len(res) - 1
 	ans := []byte(u.to)
 	var dollar = []byte("{")
-	for i:=1; i<=count; i++ {
+	for i := 1; i <= count; i++ {
 		t := strconv.AppendInt(dollar[:1], int64(i), 10)
 		t = append(t, '}')
 		ans = bytes.ReplaceAll(ans, t, res[i])
@@ -31,7 +31,7 @@ func (u *URLRewriter) Rewrite(path []byte) ([]byte, bool) {
 
 func (u *URLRewriter) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
-		newPath,ok := u.Rewrite(ctx.Path())
+		newPath, ok := u.Rewrite(ctx.Path())
 		if ok && len(newPath) > 0 {
 			ctx.URI().SetPathBytes(newPath)
 		}
@@ -39,11 +39,10 @@ func (u *URLRewriter) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandl
 	}
 }
 
-func NewRewriter(from string, to string) (*URLRewriter,error) {
-	re,err := regexp.Compile(from)
+func NewRewriter(from string, to string) (*URLRewriter, error) {
+	re, err := regexp.Compile(from)
 	if err != nil {
 		return nil, err
 	}
-	return &URLRewriter{from: re, to: to},nil
+	return &URLRewriter{from: re, to: to}, nil
 }
-

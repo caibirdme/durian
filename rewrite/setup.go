@@ -8,17 +8,17 @@ import (
 
 func init() {
 	caddy.RegisterPlugin(super.DirectiveRewrite, caddy.Plugin{
-		ServerType:super.FastHTTPServerType,
-		Action:setup,
+		ServerType: super.FastHTTPServerType,
+		Action:     setup,
 	})
 }
 
 func setup(c *caddy.Controller) error {
-	rule,err := parseRewrite(c)
+	rule, err := parseRewrite(c)
 	if nil != err {
 		return err
 	}
-	r,err := NewRewriter(rule.From, rule.To)
+	r, err := NewRewriter(rule.From, rule.To)
 	if err != nil {
 		return err
 	}
@@ -28,7 +28,7 @@ func setup(c *caddy.Controller) error {
 
 type RewriteRule struct {
 	From string
-	To string
+	To   string
 }
 
 var nilRule = RewriteRule{}
@@ -39,7 +39,7 @@ func parseRewrite(c *caddy.Controller) (RewriteRule, error) {
 	if !c.NextArg() {
 		return nilRule, c.ArgErr()
 	}
-	rule := RewriteRule{From:c.Val(),}
+	rule := RewriteRule{From: c.Val()}
 	for c.NextBlock() {
 		kind := c.Val()
 		err := parseKind(kind, c, &rule)

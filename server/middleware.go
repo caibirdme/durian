@@ -21,3 +21,16 @@ func compileMiddleware(mList []Middleware, final fasthttp.RequestHandler) fastht
 func notFound(reqCtx *fasthttp.RequestCtx) {
 	reqCtx.NotFound()
 }
+
+func emptyMiddleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return next
+}
+
+func NewGzipMiddleware(cfg GzipConfig) Middleware {
+	if !cfg.Open {
+		return emptyMiddleware
+	}
+	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return fasthttp.CompressHandlerLevel(next, cfg.Level)
+	}
+}

@@ -9,13 +9,13 @@ import (
 
 func init() {
 	caddy.RegisterPlugin(super.DirectiveHeader, caddy.Plugin{
-		ServerType:super.FastHTTPServerType,
-		Action:setup,
+		ServerType: super.FastHTTPServerType,
+		Action:     setup,
 	})
 }
 
 func setup(c *caddy.Controller) error {
-	cfg,err := parseHeader(c)
+	cfg, err := parseHeader(c)
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func setup(c *caddy.Controller) error {
 	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			if bytes.HasPrefix(ctx.Path(), pathPrefixBytes) {
-				for _,pair := range cfg.Headers {
+				for _, pair := range cfg.Headers {
 					ctx.Request.Header.Set(pair.K, pair.V)
 				}
 			}
@@ -34,9 +34,10 @@ func setup(c *caddy.Controller) error {
 }
 
 type HeaderConfig struct {
-	Path string
+	Path    string
 	Headers []super.KVTuple
 }
+
 // header path k v
 //
 // header path {
@@ -49,23 +50,23 @@ func parseHeader(c *caddy.Controller) (*HeaderConfig, error) {
 	if !c.NextArg() {
 		return nil, c.ArgErr()
 	}
-	cfg := HeaderConfig{Path:c.Val()}
+	cfg := HeaderConfig{Path: c.Val()}
 
 	hasBlock := false
 	for c.NextBlock() {
-		var k,v string
-		if !c.Args(&k,&v) {
-			return nil, c.ArgErr()
-		}
-		cfg.Headers = append(cfg.Headers, super.KVTuple{K:k,V:v})
-		hasBlock = true
-	}
-	if !hasBlock {
-		var k,v string
+		var k, v string
 		if !c.Args(&k, &v) {
 			return nil, c.ArgErr()
 		}
-		cfg.Headers = append(cfg.Headers, super.KVTuple{K:k,V:v})
+		cfg.Headers = append(cfg.Headers, super.KVTuple{K: k, V: v})
+		hasBlock = true
+	}
+	if !hasBlock {
+		var k, v string
+		if !c.Args(&k, &v) {
+			return nil, c.ArgErr()
+		}
+		cfg.Headers = append(cfg.Headers, super.KVTuple{K: k, V: v})
 	}
 	return &cfg, nil
 }

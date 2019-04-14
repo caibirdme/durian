@@ -10,8 +10,8 @@ import (
 
 func init() {
 	caddy.RegisterPlugin(super.DirectiveStatus, caddy.Plugin{
-		ServerType:super.FastHTTPServerType,
-		Action:setup,
+		ServerType: super.FastHTTPServerType,
+		Action:     setup,
 	})
 }
 
@@ -22,7 +22,7 @@ func setup(c *caddy.Controller) error {
 	}
 	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			for _,basePath := range cfg.Paths {
+			for _, basePath := range cfg.Paths {
 				if bytes.HasPrefix(ctx.Path(), []byte(basePath)) {
 					ctx.SetStatusCode(cfg.Code)
 					break
@@ -35,9 +35,10 @@ func setup(c *caddy.Controller) error {
 }
 
 type StatusConfig struct {
-	Code int
+	Code  int
 	Paths []string
 }
+
 func parseStatus(c *caddy.Controller) (*StatusConfig, error) {
 	// skip status keyword
 	c.Next()
@@ -48,7 +49,7 @@ func parseStatus(c *caddy.Controller) (*StatusConfig, error) {
 	if err != nil {
 		return nil, c.Err("statusCode must be a valid number defined by RFC")
 	}
-	cfg := StatusConfig{Code:code,}
+	cfg := StatusConfig{Code: code}
 	hasBlock := false
 	for c.NextBlock() {
 		hasBlock = true

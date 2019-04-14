@@ -5,6 +5,7 @@ import (
 	_ "github.com/caibirdme/caddy-fasthttp/server"
 
 	// plug in directives
+	_ "github.com/caibirdme/caddy-fasthttp/gzip"
 	_ "github.com/caibirdme/caddy-fasthttp/header"
 	_ "github.com/caibirdme/caddy-fasthttp/response"
 	_ "github.com/caibirdme/caddy-fasthttp/reverse_proxy"
