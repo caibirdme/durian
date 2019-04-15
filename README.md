@@ -51,7 +51,7 @@ if path matched, return directly. This is always helpful when you want to set up
 
 #### syntax
 ```
-proxy {
+response {
     subdirectives
     #...
 }

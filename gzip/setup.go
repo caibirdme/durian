@@ -1,10 +1,11 @@
 package gzip
 
 import (
-	super "github.com/caibirdme/caddy-fasthttp/server"
-	"github.com/mholt/caddy"
 	"strconv"
 	"strings"
+
+	super "github.com/caibirdme/caddy-fasthttp/server"
+	"github.com/mholt/caddy"
 )
 
 func init() {
@@ -18,6 +19,9 @@ func setup(c *caddy.Controller) error {
 	cfg, err := parseGzip(c)
 	if err != nil {
 		return err
+	}
+	if cfg == nilConfig {
+		return nil
 	}
 	if cfg.Level == 0 {
 		return nil
