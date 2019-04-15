@@ -89,6 +89,12 @@ func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	if d := cfg.MaxKeepaliveDuration; d != 0 {
 		srv.MaxKeepaliveDuration = d
 	}
+	if d := cfg.ReadTimeout; d != 0 {
+		srv.ReadTimeout = d
+	}
+	if d := cfg.WriteTimeout; d != 0 {
+		srv.WriteTimeout = d
+	}
 	if cfg.Concurrency != 0 {
 		srv.Concurrency = cfg.Concurrency
 	}

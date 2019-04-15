@@ -181,10 +181,17 @@ timeout {
 ```
 #### subdirectives
 * `keep_alive duration`: set keepalive duration
+* `read duration`: set readTimeout, the time spend to read data from the connection.
+* `write duration`: set writeTimeout, writeTimeout should largeEqual than `readTimeout+processTime`
+
+**note**: For detailed explanations about timeout, see: [here](https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/)
+
 #### example
 ```
 timeout {
     keep_alive 30s
+    read 1s
+    write 2s
 }
 ```
 

@@ -1,10 +1,11 @@
 package timeout
 
 import (
-	super "github.com/caibirdme/caddy-fasthttp/server"
-	"github.com/mholt/caddy"
 	"strings"
 	"time"
+
+	super "github.com/caibirdme/caddy-fasthttp/server"
+	"github.com/mholt/caddy"
 )
 
 const (
@@ -26,13 +27,20 @@ func setupTimeouts(c *caddy.Controller) error {
 	c.Next()
 	for c.NextBlock() {
 		kind := c.Val()
+		if !c.NextArg() {
+			return c.ArgErr()
+		}
+		d, err := time.ParseDuration(c.Val())
+		if err != nil {
+			return c.Err(err.Error())
+		}
 		switch strings.ToLower(kind) {
 		case "keep_alive":
-			d, err := time.ParseDuration(c.Val())
-			if err != nil {
-				return c.Err(err.Error())
-			}
 			cfg.MaxKeepaliveDuration = d
+		case "read":
+			cfg.ReadTimeout = d
+		case "write":
+			cfg.WriteTimeout = d
 		}
 	}
 	return nil
