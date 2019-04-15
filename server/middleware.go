@@ -6,8 +6,12 @@ import (
 
 type Middleware func(handler fasthttp.RequestHandler) fasthttp.RequestHandler
 
-func compileMiddlewareEndWithNotFound(mList []Middleware) fasthttp.RequestHandler {
-	return compileMiddleware(mList, notFound)
+func compileMiddlewareEndWithNotFound(mList []Middleware, cfg NotFoundConfig) fasthttp.RequestHandler {
+	final := notFound
+	if cfg.StatusCode != 0 {
+		final= newNotFoundHandler(cfg)
+	}
+	return compileMiddleware(mList, final)
 }
 
 func compileMiddleware(mList []Middleware, final fasthttp.RequestHandler) fasthttp.RequestHandler {
@@ -24,6 +28,21 @@ func notFound(reqCtx *fasthttp.RequestCtx) {
 
 func emptyMiddleware(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return next
+}
+
+func newNotFoundHandler(cfg NotFoundConfig) fasthttp.RequestHandler {
+	if cfg.Body != "" {
+		return func(ctx *fasthttp.RequestCtx) {
+			ctx.Response.Reset()
+			ctx.SetStatusCode(cfg.StatusCode)
+			ctx.SetContentType(cfg.ContentType)
+			ctx.SetBodyString(cfg.Body)
+		}
+	}
+	// not_found directive's setup function must ensure the cfg.File is valid and accessible
+	return func(ctx *fasthttp.RequestCtx) {
+		ctx.SendFile(cfg.File)
+	}
 }
 
 func NewGzipMiddleware(cfg GzipConfig) Middleware {

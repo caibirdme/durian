@@ -7,6 +7,7 @@ import (
 	// plug in directives
 	_ "github.com/caibirdme/caddy-fasthttp/gzip"
 	_ "github.com/caibirdme/caddy-fasthttp/header"
+	_ "github.com/caibirdme/caddy-fasthttp/not_found"
 	_ "github.com/caibirdme/caddy-fasthttp/response"
 	_ "github.com/caibirdme/caddy-fasthttp/reverse_proxy"
 	_ "github.com/caibirdme/caddy-fasthttp/rewrite"

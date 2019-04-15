@@ -234,6 +234,29 @@ gzip {
 }
 ``` 
 
+### NotFound
+not_found is used to specify the action when url mismatch
+#### syntax
+```
+not_found {
+    subdirectives
+    #...
+}
+```
+#### subdirectives
+* `file string`: specify a file to send to client
+* `body string`: specify a string to send to client, default "not found"
+* `code int`: specify the response status code, default 404
+* `content_type string`: set content type, default "text/html; charset=utf-8"
+
+**note**: can't set file and body at the same time
+#### example
+```
+not_found {
+    file /var/www/site/404.html
+}
+```
+
 ## Plan
 
 - [x] rewrite

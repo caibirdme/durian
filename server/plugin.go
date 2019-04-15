@@ -73,7 +73,15 @@ type ServerConfig struct {
 	NoDefaultServerHeader         bool
 	NoDefaultContentType          bool
 	Gzip                          GzipConfig
+	NotFound                      NotFoundConfig
 	middlewares                   []Middleware
+}
+
+type NotFoundConfig struct {
+	StatusCode  int
+	File        string
+	ContentType string
+	Body        string
 }
 
 func (cfg *ServerConfig) AddMiddleware(m Middleware) {
@@ -81,7 +89,7 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 }
 
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
-	handler := compileMiddlewareEndWithNotFound(cfg.middlewares)
+	handler := compileMiddlewareEndWithNotFound(cfg.middlewares, cfg.NotFound)
 	handler = NewGzipMiddleware(cfg.Gzip)(handler)
 	srv := &fasthttp.Server{
 		Handler: handler,
@@ -160,6 +168,7 @@ var directives = []string{
 	DirectiveRewrite,
 	DirectiveStatus,
 	DirectiveResponse,
+	DirectiveNotFound,
 }
 
 const (
@@ -171,4 +180,5 @@ const (
 	DirectiveStatus   = "status"
 	DirectiveResponse = "response"
 	DirectiveGzip     = "gzip"
+	DirectiveNotFound = "not_found"
 )
