@@ -2,12 +2,13 @@ package response
 
 import (
 	"bytes"
-	super "github.com/caibirdme/caddy-fasthttp/server"
-	"github.com/mholt/caddy"
-	"github.com/valyala/fasthttp"
 	"regexp"
 	"strconv"
 	"strings"
+
+	super "github.com/caibirdme/caddy-fasthttp/server"
+	"github.com/mholt/caddy"
+	"github.com/valyala/fasthttp"
 )
 
 var (
@@ -38,7 +39,7 @@ func setup(c *caddy.Controller) error {
 	}
 	var re *regexp.Regexp
 	if cfg.Pattern != "" {
-		re, err = regexp.Compile(cfg.Path)
+		re, err = regexp.Compile(cfg.Pattern)
 		if err != nil {
 			return err
 		}

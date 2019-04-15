@@ -1,10 +1,13 @@
-:8051 {
-    proxy {
-        path /foo
-        upstream {
-            localhost:9001
-            localhost:9002
-        }
-        max_conn 1000 #keep no more than max_conn connections to upstream
-    }
+:8051
+
+timeout {
+    read 1s
+    write 2s
+    keep_alive 5m
+}
+
+response {
+    pattern /foo/\d+/.*
+    body "{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"
+    content_type Application/json
 }
