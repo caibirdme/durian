@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	super "github.com/caibirdme/caddy-fasthttp/server"
+	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 )
 

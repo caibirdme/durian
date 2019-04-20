@@ -75,6 +75,7 @@ type ServerConfig struct {
 	Gzip                          GzipConfig
 	NotFound                      NotFoundConfig
 	middlewares                   []Middleware
+	outermost                     Middleware
 }
 
 type NotFoundConfig struct {
@@ -88,9 +89,16 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 	cfg.middlewares = append(cfg.middlewares, m)
 }
 
+func (cfg *ServerConfig) AddOuterMostMiddleware(m Middleware) {
+	cfg.outermost = m
+}
+
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	handler := compileMiddlewareEndWithNotFound(cfg.middlewares, cfg.NotFound)
 	handler = NewGzipMiddleware(cfg.Gzip)(handler)
+	if cfg.outermost != nil {
+		handler = cfg.outermost(handler)
+	}
 	srv := &fasthttp.Server{
 		Handler: handler,
 	}
@@ -169,6 +177,7 @@ var directives = []string{
 	DirectiveStatus,
 	DirectiveResponse,
 	DirectiveNotFound,
+	DirectiveLog,
 }
 
 const (
@@ -181,4 +190,5 @@ const (
 	DirectiveResponse = "response"
 	DirectiveGzip     = "gzip"
 	DirectiveNotFound = "not_found"
+	DirectiveLog      = "log"
 )

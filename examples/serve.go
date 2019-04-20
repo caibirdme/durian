@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/caibirdme/caddy-fasthttp"
+	_ "github.com/caibirdme/durian"
 	"github.com/mholt/caddy"
 )
 

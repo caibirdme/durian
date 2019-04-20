@@ -1,4 +1,4 @@
-# caddy-fasthttp
+# durian
 
 Make caddy run 10 times faster, thx to fasthttp's high performance
 
@@ -256,6 +256,54 @@ not_found {
     file /var/www/site/404.html
 }
 ```
+### log
+log related config, each entry is in json format
+#### syntax
+```
+log {
+    subdirective
+    #...
+}
+```
+#### subdirecitve
+* `access_path string`: specify the path of access log
+    * `access_path /foo/bar`: access log will be stored in /foo/bar/access.log
+    * `access_path /foo/bar/customize.log`: access log will be stored in customize.log
+* `err_path string`: specify the path of error log
+* `format {entries...}`: specify access log content
+    * now
+    * bytes_sent
+    * body_bytes_sent
+    * connection_requests
+    * request_time
+    * request_length
+    * status
+    * user_agent
+    * remote_addr
+    * request_uri
+    * query_string
+    * request_body
+    * request_header
+    * method
+    * response_body
+    * response_header
+    * referer
+#### example
+```
+log {
+    access_path /var/site/test.log
+    err_path /var/site/err.log
+    format {
+        now
+        remote_addr
+        bytes_sent
+        method
+        request_uri
+        status
+        user_agent
+    }
+}
+```
 
 ## Plan
 
@@ -277,7 +325,7 @@ OS: Linux caibirdme-MS-7B53 4.15.0-47-generic #50-Ubuntu SMP Wed Mar 13 10:44:52
 
 ### upstream server sleep 50ms
 
-#### caddy-fasthttp
+#### durian
 ##### Caddyfile
 ```
 :8051
@@ -327,5 +375,5 @@ Transfer/sec:    759.75KB
 ```
 
 #### conclusion
-From the benchmark above, caddy-fasthttp is more than 4 times faster than caddy.
+From the benchmark above, durian is more than 4 times faster than caddy.
 More benchmarks are on the way...

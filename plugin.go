@@ -1,17 +1,18 @@
-package caddy_fasthttp
+package durian
 
 import (
 	// plug in server
-	_ "github.com/caibirdme/caddy-fasthttp/server"
+	_ "github.com/caibirdme/durian/server"
 
 	// plug in directives
-	_ "github.com/caibirdme/caddy-fasthttp/gzip"
-	_ "github.com/caibirdme/caddy-fasthttp/header"
-	_ "github.com/caibirdme/caddy-fasthttp/not_found"
-	_ "github.com/caibirdme/caddy-fasthttp/response"
-	_ "github.com/caibirdme/caddy-fasthttp/reverse_proxy"
-	_ "github.com/caibirdme/caddy-fasthttp/rewrite"
-	_ "github.com/caibirdme/caddy-fasthttp/root"
-	_ "github.com/caibirdme/caddy-fasthttp/status"
-	_ "github.com/caibirdme/caddy-fasthttp/timeout"
+	_ "github.com/caibirdme/durian/gzip"
+	_ "github.com/caibirdme/durian/header"
+	_ "github.com/caibirdme/durian/log"
+	_ "github.com/caibirdme/durian/not_found"
+	_ "github.com/caibirdme/durian/response"
+	_ "github.com/caibirdme/durian/reverse_proxy"
+	_ "github.com/caibirdme/durian/rewrite"
+	_ "github.com/caibirdme/durian/root"
+	_ "github.com/caibirdme/durian/status"
+	_ "github.com/caibirdme/durian/timeout"
 )

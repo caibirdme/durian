@@ -1,5 +1,11 @@
 :8051
 
+log {
+    access_path ./access.log
+    err_path ./error.log
+    format
+}
+
 timeout {
     read 1s
     write 2s
