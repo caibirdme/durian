@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/valyala/fasthttp"
+	"github.com/google/uuid"
 )
 
 type Middleware func(handler fasthttp.RequestHandler) fasthttp.RequestHandler
@@ -51,5 +52,15 @@ func NewGzipMiddleware(cfg GzipConfig) Middleware {
 	}
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return fasthttp.CompressHandlerLevel(next, cfg.Level)
+	}
+}
+
+func NewRequestIDMiddleware(headerName string) Middleware {
+	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+		return func(ctx *fasthttp.RequestCtx) {
+			ctx.Request.Header.Set(headerName, uuid.New().String())
+			ctx.SetUserValue(RequestIDHeaderName, headerName)
+			next(ctx)
+		}
 	}
 }

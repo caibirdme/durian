@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	super "github.com/caibirdme/durian/server"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -140,10 +141,12 @@ const (
 	entryKeyResponseBody       = "response_body"
 	entryKeyResponseHeader     = "response_header"
 	entryReferer               = "referer"
+	entryRequestID             = "request_id"
 )
 
 var (
 	writerDict = map[string]partialWriter{
+		entryRequestID:             requestIDWriter,
 		entryStartTime:             startTimeWriter,
 		entryReferer:               refererWriter,
 		entryKeyBytesSent:          bytesSentWriter,
@@ -163,6 +166,19 @@ var (
 		entryKeyResponseHeader:     responseHeaderWriter,
 	}
 )
+
+func requestIDWriter(ctx *fasthttp.RequestCtx) zapcore.Field {
+	headerKey := ctx.UserValue(super.RequestIDHeaderName)
+	var reqID []byte
+	if headerKey != nil {
+		reqID = ctx.Request.Header.Peek(headerKey.(string))
+	}
+	if len(reqID) == 0 {
+		return zap.String(entryRequestID, "-")
+	} else {
+		return zap.ByteString(entryRequestID, reqID)
+	}
+}
 
 func refererWriter(ctx *fasthttp.RequestCtx) zapcore.Field {
 	return zap.ByteString(entryReferer, ctx.Referer())

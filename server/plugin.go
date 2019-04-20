@@ -13,6 +13,8 @@ import (
 
 const (
 	FastHTTPServerType = "fasthttp"
+	RequestIDHeaderName = "rid"
+	defaultRequestIDName = "Request-ID"
 )
 
 func init() {
@@ -75,6 +77,7 @@ type ServerConfig struct {
 	Gzip                          GzipConfig
 	NotFound                      NotFoundConfig
 	middlewares                   []Middleware
+	RequestIDName string
 	outermost                     Middleware
 }
 
@@ -96,6 +99,9 @@ func (cfg *ServerConfig) AddOuterMostMiddleware(m Middleware) {
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
 	handler := compileMiddlewareEndWithNotFound(cfg.middlewares, cfg.NotFound)
 	handler = NewGzipMiddleware(cfg.Gzip)(handler)
+	if cfg.RequestIDName != "" {
+		handler = NewRequestIDMiddleware(cfg.RequestIDName)(handler)
+	}
 	if cfg.outermost != nil {
 		handler = cfg.outermost(handler)
 	}
@@ -153,6 +159,13 @@ func (c *fastContext) parseConfig(sblock caddyfile.ServerBlock) (ServerConfig, e
 				}
 				// ok equals true means EnableKeepalive
 				cfg.DisableKeepalive = !ok
+			}
+		case "request_id":
+			if len(vals) > 0 {
+				val := vals[0].Text
+				cfg.RequestIDName = val
+			} else {
+				cfg.RequestIDName = defaultRequestIDName
 			}
 		}
 	}
