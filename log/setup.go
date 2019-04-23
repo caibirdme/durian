@@ -111,6 +111,7 @@ func parseSize(s string) (int, error) {
 var (
 	defaultFormat = []string{
 		entryKeyRemoteAddr,
+		entryKeyHost,
 		entryKeyMethod,
 		entryKeyRequestURI,
 		entryKeyStatusCode,

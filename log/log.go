@@ -142,10 +142,12 @@ const (
 	entryKeyResponseHeader     = "response_header"
 	entryReferer               = "referer"
 	entryRequestID             = "request_id"
+	entryKeyHost               = "host"
 )
 
 var (
 	writerDict = map[string]partialWriter{
+		entryKeyHost:               hostWriter,
 		entryRequestID:             requestIDWriter,
 		entryStartTime:             startTimeWriter,
 		entryReferer:               refererWriter,
@@ -166,6 +168,10 @@ var (
 		entryKeyResponseHeader:     responseHeaderWriter,
 	}
 )
+
+func hostWriter(ctx *fasthttp.RequestCtx) zapcore.Field {
+	return zap.ByteString(entryKeyHost, ctx.Host())
+}
 
 func requestIDWriter(ctx *fasthttp.RequestCtx) zapcore.Field {
 	headerKey := ctx.UserValue(super.RequestIDHeaderName)
