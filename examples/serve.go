@@ -1,51 +1,58 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
-	"os"
-
-	_ "github.com/caibirdme/durian"
+	"fmt"
+	"github.com/buaazp/fasthttprouter"
+	"github.com/caibirdme/durian"
+	"github.com/caibirdme/durian/router"
 	"github.com/mholt/caddy"
+	"github.com/valyala/fasthttp"
+	"log"
 )
 
 func init() {
 	caddy.TrapSignals()
-	// configure default caddyfile
-	caddy.SetDefaultCaddyfileLoader("default", caddy.LoaderFunc(defaultLoader))
 }
 
 func main() {
 	caddy.AppName = "haha"
 	caddy.AppVersion = "0.0.1"
+	// 注册我们自己的逻辑
+	router.RegisterPlugin(handler)
 
-	// load caddyfile
-	caddyfile, err := caddy.LoadCaddyfile("fasthttp")
+	// 读取配置
+	input, err := durian.ReadConfig("./Caddyfile")
+
+	// 启动服务
+	instance, err := caddy.Start(input)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.SetOutput(os.Stdout)
-	// start caddy server
-	instance, err := caddy.Start(caddyfile)
-	if err != nil {
-		log.Fatal(err)
-	}
 
+	// 等待instance下所有server stop
 	instance.Wait()
 }
 
-// provide loader function
-func defaultLoader(serverType string) (caddy.Input, error) {
-	contents, err := ioutil.ReadFile(caddy.DefaultConfigFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
+// 你自己的业务逻辑，这个里就是你自己通常代码里的main
+func handler(cfg router.RouterConfig) (fasthttp.RequestHandler, error) {
+	/*
+	可以在Caddyfile中指定业务配置文件的路径，之后就能从cfg参数里取到
+	router {
+		config /home/tom/cfg.toml
 	}
-	return caddy.CaddyfileInput{
-		Contents:       contents,
-		Filepath:       caddy.DefaultConfigFile,
-		ServerTypeName: serverType,
-	}, nil
+	 */
+
+	// your config file path, you can decode it
+	_ = cfg.CfgPath
+
+	// 可以使用任何基于fasthttp的router或者框架
+	r := fasthttprouter.New()
+	// 配置路由
+	r.GET("/user/:name", getUserName)
+
+	return r.Handler, nil
+}
+
+func getUserName(ctx *fasthttp.RequestCtx) {
+	ctx.WriteString(fmt.Sprintf("Hello %v\n", ctx.UserValue("name")))
 }

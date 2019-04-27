@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	FastHTTPServerType = "fasthttp"
+	FastHTTPServerType  = "fasthttp"
 	RequestIDHeaderName = "rid"
-	defaultRequestIDName = "Request-ID"
 )
 
 func init() {
@@ -77,8 +76,8 @@ type ServerConfig struct {
 	Gzip                          GzipConfig
 	NotFound                      NotFoundConfig
 	middlewares                   []Middleware
-	RequestIDName string
-	outermost                     Middleware
+	namedMiddleware               map[string]Middleware
+	RequestIDName                 string
 }
 
 type NotFoundConfig struct {
@@ -92,18 +91,44 @@ func (cfg *ServerConfig) AddMiddleware(m Middleware) {
 	cfg.middlewares = append(cfg.middlewares, m)
 }
 
-func (cfg *ServerConfig) AddOuterMostMiddleware(m Middleware) {
-	cfg.outermost = m
+func (cfg *ServerConfig) AddNamedMiddleware(name string, m Middleware) {
+	if cfg.namedMiddleware == nil {
+		cfg.namedMiddleware = make(map[string]Middleware)
+	}
+	cfg.namedMiddleware[name] = m
 }
 
+const (
+	LogMiddlewareName    = "log"
+	UUIDMiddlewareName   = "uuid"
+	RouterMiddlewareName = "router"
+)
+
 func (cfg *ServerConfig) makeServer() *fasthttp.Server {
-	handler := compileMiddlewareEndWithNotFound(cfg.middlewares, cfg.NotFound)
-	handler = NewGzipMiddleware(cfg.Gzip)(handler)
-	if cfg.RequestIDName != "" {
-		handler = NewRequestIDMiddleware(cfg.RequestIDName)(handler)
+	var handler fasthttp.RequestHandler
+	// mount user defined middleware
+	if cfg.namedMiddleware != nil {
+		if selfRouter, ok := cfg.namedMiddleware[RouterMiddlewareName]; ok {
+			handler = selfRouter(notFoundHandler)
+		}
 	}
-	if cfg.outermost != nil {
-		handler = cfg.outermost(handler)
+	// if there's not user defined middleware, just use not found as the final handler
+	if handler == nil {
+		handler = compileMiddleware(cfg.middlewares, notFoundHandler)
+	} else {
+		handler = compileMiddleware(cfg.middlewares, handler)
+	}
+	// mount uuid at the very beginning
+	if cfg.namedMiddleware != nil {
+		if m, ok := cfg.namedMiddleware[UUIDMiddlewareName]; ok {
+			handler = m(handler)
+		}
+	}
+	// mount the log as the outermost middleware
+	if cfg.namedMiddleware != nil {
+		if m, ok := cfg.namedMiddleware[LogMiddlewareName]; ok {
+			handler = m(handler)
+		}
 	}
 	srv := &fasthttp.Server{
 		Handler: handler,
@@ -160,13 +185,6 @@ func (c *fastContext) parseConfig(sblock caddyfile.ServerBlock) (ServerConfig, e
 				// ok equals true means EnableKeepalive
 				cfg.DisableKeepalive = !ok
 			}
-		case "request_id":
-			if len(vals) > 0 {
-				val := vals[0].Text
-				cfg.RequestIDName = val
-			} else {
-				cfg.RequestIDName = defaultRequestIDName
-			}
 		}
 	}
 	return cfg, nil
@@ -191,6 +209,7 @@ var directives = []string{
 	DirectiveResponse,
 	DirectiveNotFound,
 	DirectiveLog,
+	DirectiveRouter,
 }
 
 const (
@@ -204,4 +223,5 @@ const (
 	DirectiveGzip     = "gzip"
 	DirectiveNotFound = "not_found"
 	DirectiveLog      = "log"
+	DirectiveRouter   = "router"
 )

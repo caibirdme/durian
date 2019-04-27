@@ -1,19 +1,40 @@
-:8051
+:8051 {
 
-log {
-    access_path ./access.log
-    err_path ./error.log
-    format
-}
+    timeout {
+        read 1s
+        write 2s
+        keep_alive 5m
+    }
 
-timeout {
-    read 1s
-    write 2s
-    keep_alive 5m
-}
+    # url命中pattern之后直接输出
+    response {
+        pattern /foo/\d+/.*
+        body "{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"
+        content_type Application/json
+    }
 
-response {
-    pattern /foo/\d+/.*
-    body "{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"
-    content_type Application/json
+    # 配置自定义逻辑的配置文件路径
+    router {
+        config ./conf.toml
+    }
+
+    # 配置日志
+    log {
+        access_path ./access.log
+        err_path ./error.log
+        # 配置日志输出内容，具体可以输出哪些可以参见文档
+        # 这里也可以只写一个format后面啥都不写，表示使用默认的格式
+        format {
+            remote_addr
+            host
+            method
+            request_uri
+            status
+            start_time # 请求到来的时间点
+            process_time # 处理请求的耗时
+            bytes_sent
+            user_agent
+            response_body # 打印response body
+        }
+    }
 }

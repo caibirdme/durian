@@ -30,7 +30,7 @@ func setupAccess(c *caddy.Controller) error {
 	if sync != nil {
 		c.OnShutdown(sync)
 	}
-	super.GetConfig(c).AddOuterMostMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	super.GetConfig(c).AddNamedMiddleware(super.LogMiddlewareName, func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			next(ctx)
 			logWriter.Write(ctx)

@@ -1,9 +1,7 @@
 package durian
 
 import (
-	// plug in server
-	_ "github.com/caibirdme/durian/server"
-
+	"github.com/caibirdme/durian/server"
 	// plug in directives
 	_ "github.com/caibirdme/durian/gzip"
 	_ "github.com/caibirdme/durian/header"
@@ -15,4 +13,24 @@ import (
 	_ "github.com/caibirdme/durian/root"
 	_ "github.com/caibirdme/durian/status"
 	_ "github.com/caibirdme/durian/timeout"
+	"github.com/mholt/caddy"
+	"io/ioutil"
+	"os"
 )
+
+// ReadConfig reads config from given path
+func ReadConfig(confPath string) (caddy.Input, error) {
+	contents, err := ioutil.ReadFile(confPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return caddy.CaddyfileInput{
+		Contents:       contents,
+		Filepath:       confPath,
+		ServerTypeName: server.FastHTTPServerType,
+	}, nil
+}
+
