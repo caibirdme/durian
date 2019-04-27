@@ -40,7 +40,13 @@ Durian itself is a powerful and high performance web server. You can use it like
 }
 ```
 Config file above can sets up a server listening on port 8051 and does response and reverse proxy as you wish.
-
+each entry in access.log is a json, such as:
+```json
+{"remote_addr":"127.0.0.1:50926","host":"localhost:8051","method":"GET","request_uri":"/user/deen","status":200,"start_time":"2019-04-27T19:56:51.811+0800","process_time":"19.337µs","bytes_sent":85,"user_agent":"curl/7.58.0","response_body":"Hello deen\n"}
+```
+```json
+{"remote_addr":"127.0.0.1:50928","host":"localhost:8051","method":"GET","request_uri":"/foo/123/bar","status":200,"start_time":"2019-04-27T19:57:06.733+0800","process_time":"12.34µs","bytes_sent":155,"user_agent":"curl/7.58.0","response_body":"{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"}
+```
 ### Advantage of Durian
 * easy to configure
 * high performance(at least 5 times faster than Go's net/http)
