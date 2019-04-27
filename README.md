@@ -1,24 +1,143 @@
-# durian
+# Durian
 
-Make caddy run 10 times faster, thx to fasthttp's high performance
+[中文](./docs/zh-CN.md)
 
-See examples for help.
+Durian is a generic purpose web server, like apache,nginx and caddy(Durian is based on caddy).
 
-This project is in progress, blow are the current supported directives:
+And, Durian is also a modular and pluggable framework.
+
+See examples to have a quick start.
+
+## Generic Web Server
+Durian itself is a powerful and high performance web server. You can use it like nginx:
+```
+:8051 {
+
+    # if url matches pattern, then response directly
+    response {
+        pattern /foo/\d+/.*
+        body "{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"
+        content_type Application/json
+    }
+    
+    # reverse proxy
+    proxy {
+        pattern /bar/.*
+        upstream {
+            10.10.10.1
+            10.10.10.2
+        }
+    }
+
+    # configure log
+    log {
+        access_path ./access.log
+        err_path ./error.log
+        # if no more words, this means using default log format
+        # for more infomartion about the log format, see doc for log module
+        format
+    }
+}
+```
+Config file above can sets up a server listening on port 8051 and does response and reverse proxy as you wish.
+
+### Advantage of Durian
+* easy to configure
+* high performance(at least 5 times faster than Go's net/http)
+* zero-downtime
+    * graceful shutdown
+    * graceful restart
+    * graceful upgrade
+* cross platform
+* could work with supervisor
+* highly extensible(really!!)
+
+### Extend Durian
+Like OpenResty, you can use Lua to extend the function of Nginx.
+You can extend Durian with pure go due to Durian's modular design, with only no more than 10 lines, which is really very easy.
+
+Below is a full and runnable example:
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/buaazp/fasthttprouter"
+	"github.com/caibirdme/durian"
+	"github.com/caibirdme/durian/router"
+	"github.com/mholt/caddy"
+	"github.com/valyala/fasthttp"
+	"log"
+)
+
+func init() {
+	// trap signals and enable graceful restart
+	caddy.TrapSignals()
+}
+
+func main() {
+	caddy.AppName = "haha"
+	caddy.AppVersion = "0.0.1"
+	// Register your own logic here
+	router.RegisterPlugin(handler)
+
+	// read config
+	input, err := durian.ReadConfig("./Caddyfile")
+
+	// start the server
+	instance, err := caddy.Start(input)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// wait for all servers to stop
+	instance.Wait()
+}
+
+// your logic entry, the main function for your plugin
+func handler(cfg router.RouterConfig) (fasthttp.RequestHandler, error) {
+	/*
+	# in your Caddyfile
+	router {
+	    config /home/my/app.toml
+	}
+	 */
+	
+	// cfg.CfgPath == "/home/my/app.toml"
+	_ = cfg.CfgPath
+	
+
+	// whatever router or framework(based on fasthttp)
+	r := fasthttprouter.New()
+	// configure route rules
+	r.GET("/user/:name", getUserName)
+
+	return r.Handler, nil
+}
+
+func getUserName(ctx *fasthttp.RequestCtx) {
+	ctx.WriteString(fmt.Sprintf("Hello %v\n", ctx.UserValue("name")))
+}
+```
+
+See, It's really easy, and now you have all the abilities Durian provides.
+
+
+This project is still in progress, blow are the current supported directives:
 
 ```
 :8051 {
     # set timeout for server
     timeout {
-        keep_alive 30s
+        keep_alive 5m
+        read 10s
+        write 10s
     }
     
     gzip {
         level 6
     }
-    
-    status 400 /abc
-    
+        
     # /api/asd/hello_123 -> /foo/hello_123/other/asd
     rewrite /api/(\w+)/(.*) {
         to /foo/{2}/other/{1}
@@ -36,11 +155,34 @@ This project is in progress, blow are the current supported directives:
         header_upstream X-Bar barbar
         header_downstream X-Baz bazbaz
     }
+    
+    response {
+        pattern /hello/\w+
+        body "{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"
+        content_type Application/json
+    }
+    
+    log {
+        access_path ./access.log
+        err_path ./error.log
+        format {
+            remote_addr
+            host
+            method
+            request_uri
+            status
+            start_time 
+            process_time 
+            bytes_sent
+            user_agent
+            response_body 
+        }
+    }
 }
 
 :8012 {
     concurrency 1000  # The maximum number of concurrent connections the server may serve
-    root / . # root simply specifies the root of the site
+    root / /home/my/sitedir # root simply specifies the root of the site
 }
 ```
 
