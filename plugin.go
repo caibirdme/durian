@@ -3,6 +3,7 @@ package durian
 import (
 	"github.com/caibirdme/durian/server"
 	// plug in directives
+	_ "github.com/caibirdme/durian/fastcgi"
 	_ "github.com/caibirdme/durian/gzip"
 	_ "github.com/caibirdme/durian/header"
 	_ "github.com/caibirdme/durian/log"
@@ -10,9 +11,10 @@ import (
 	_ "github.com/caibirdme/durian/response"
 	_ "github.com/caibirdme/durian/reverse_proxy"
 	_ "github.com/caibirdme/durian/rewrite"
-	_ "github.com/caibirdme/durian/root"
+	_ "github.com/caibirdme/durian/static"
 	_ "github.com/caibirdme/durian/status"
 	_ "github.com/caibirdme/durian/timeout"
+	_ "github.com/caibirdme/durian/upstream"
 	"github.com/mholt/caddy"
 	"io/ioutil"
 	"os"
@@ -33,4 +35,3 @@ func ReadConfig(confPath string) (caddy.Input, error) {
 		ServerTypeName: server.FastHTTPServerType,
 	}, nil
 }
-

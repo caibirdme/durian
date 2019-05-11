@@ -1,4 +1,4 @@
-package root
+package static
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	caddy.RegisterPlugin(super.DirectiveRoot, caddy.Plugin{
+	caddy.RegisterPlugin(super.DirectiveStatic, caddy.Plugin{
 		ServerType: super.FastHTTPServerType,
 		Action:     setup,
 	})
@@ -20,10 +20,14 @@ var (
 )
 
 func setup(c *caddy.Controller) error {
-	cfg := RootConfig{}
-	err := parseRoot(c, &cfg)
+	cfg := StaticConfig{}
+	err := parseStatic(c, &cfg)
 	if err != nil {
 		return err
+	}
+	srvCfg := super.GetConfig(c)
+	if cfg.Root == "" {
+		cfg.Root = srvCfg.Root
 	}
 	fs := &fasthttp.FS{
 		Root:       cfg.Root,
@@ -43,7 +47,7 @@ func setup(c *caddy.Controller) error {
 	}
 	prefixBytes := []byte(cfg.prefix)
 	process := fs.NewRequestHandler()
-	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	srvCfg.AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			if !bytes.HasPrefix(ctx.Path(), prefixBytes) {
 				next(ctx)
@@ -56,14 +60,14 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-type RootConfig struct {
+type StaticConfig struct {
 	prefix   string
 	Root     string
 	Index    []string
 	Compress bool
 }
 
-func parseRoot(c *caddy.Controller, cfg *RootConfig) error {
+func parseStatic(c *caddy.Controller, cfg *StaticConfig) error {
 	// skip root
 	c.Next()
 
@@ -77,7 +81,7 @@ func parseRoot(c *caddy.Controller, cfg *RootConfig) error {
 		hasBlock = true
 		kind := c.Val()
 		switch strings.ToLower(kind) {
-		case "dir":
+		case "root":
 			if !c.NextArg() {
 				return c.ArgErr()
 			}

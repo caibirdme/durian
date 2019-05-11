@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -56,6 +57,7 @@ type GzipConfig struct {
 
 // ServerConfig stores the configuration for fasthttp.Server
 type ServerConfig struct {
+	Root                          string
 	Addr                          string
 	Name                          string
 	Concurrency                   int
@@ -185,7 +187,18 @@ func (c *fastContext) parseConfig(sblock caddyfile.ServerBlock) (ServerConfig, e
 				// ok equals true means EnableKeepalive
 				cfg.DisableKeepalive = !ok
 			}
+		case "root":
+			if len(vals) > 0 {
+				cfg.Root = vals[0].Text
+			}
 		}
+	}
+	if cfg.Root == "" {
+		curDir, err := os.Getwd()
+		if err != nil {
+			return cfg, err
+		}
+		cfg.Root = curDir
 	}
 	return cfg, nil
 }
@@ -199,16 +212,18 @@ func (c *fastContext) MakeServers() ([]caddy.Server, error) {
 }
 
 var directives = []string{
+	DirectiveLog,
+	DirectiveUpstream,
+	DirectiveFastCgi,
 	DirectiveGzip,
 	DirectiveProxy,
 	DirectiveHeader,
 	DirectiveTimeout,
-	DirectiveRoot,
+	DirectiveStatic,
 	DirectiveRewrite,
 	DirectiveStatus,
 	DirectiveResponse,
 	DirectiveNotFound,
-	DirectiveLog,
 	DirectiveRouter,
 }
 
@@ -216,7 +231,7 @@ const (
 	DirectiveProxy    = "proxy"
 	DirectiveHeader   = "header"
 	DirectiveTimeout  = "timeout"
-	DirectiveRoot     = "root"
+	DirectiveStatic   = "static"
 	DirectiveRewrite  = "rewrite"
 	DirectiveStatus   = "status"
 	DirectiveResponse = "response"
@@ -224,4 +239,6 @@ const (
 	DirectiveNotFound = "not_found"
 	DirectiveLog      = "log"
 	DirectiveRouter   = "router"
+	DirectiveFastCgi  = "fastcgi"
+	DirectiveUpstream = "upstream"
 )

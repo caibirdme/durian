@@ -1,23 +1,5 @@
 :8051 {
 
-    timeout {
-        read 1s
-        write 2s
-        keep_alive 5m
-    }
-
-    # url命中pattern之后直接输出
-    response {
-        pattern /foo/\d+/.*
-        body "{\"name\": \"caibirdme\", \"age\": 25, \"some\":[12,3,4]}"
-        content_type Application/json
-    }
-
-    # 配置自定义逻辑的配置文件路径
-    router {
-        config ./conf.toml
-    }
-
     # 配置日志
     log {
         access_path ./access.log
@@ -36,5 +18,19 @@
             user_agent
             response_body # 打印response body
         }
+    }
+
+    upstream backend {
+        unix:/var/run/php/php7.3-fpm.sock
+    }
+
+    fastcgi \.php {
+        root /home/caibirdme/site
+        index index.php
+        catch_stderr "PHP Fatal Error"
+        debug
+        read_timeout 3s
+        send_timeout 3s
+        upstream backend
     }
 }

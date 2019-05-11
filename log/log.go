@@ -17,20 +17,30 @@ const (
 	defaultErrLogName    = "error.log"
 )
 
+var (
+	globalLogger *zap.Logger
+)
+
+// GetLogger returns global logger
+// user should only log error info via this logger
+func GetLogger() *zap.Logger {
+	return globalLogger
+}
+
 func NewLogger(cfg LogConfig) (EntityWriter, func() error, error) {
 	err := confirmPath(&cfg)
 	if err != nil {
 		return nil, nil, err
 	}
-	lg, err := newZapLogger(cfg)
+	globalLogger, err = newZapLogger(cfg)
 	if err != nil {
 		return nil, nil, err
 	}
-	fwriter, err := newFormatWriter(lg, cfg.Format)
+	fwriter, err := newFormatWriter(globalLogger, cfg.Format)
 	if err != nil {
 		return nil, nil, err
 	}
-	return fwriter, lg.Sync, nil
+	return fwriter, globalLogger.Sync, nil
 }
 
 func confirmPath(cfg *LogConfig) error {
@@ -71,6 +81,7 @@ func newZapLogger(cfg LogConfig) (*zap.Logger, error) {
 
 func newProductionEncoderConfig() zapcore.EncoderConfig {
 	return zapcore.EncoderConfig{
+		MessageKey:     "msg",
 		StacktraceKey:  "stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
