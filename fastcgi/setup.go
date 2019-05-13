@@ -86,9 +86,9 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 				}
 				rule.SplitPathInfo = re
 			}
-		case "script_filename_prefix":
+		case "script_filename":
 			if len(list) > 1 {
-				rule.FilenamePrefix = list[1]
+				rule.ScriptFileName = list[1]
 			}
 		case "catch_stderr":
 			if len(list) > 1 {
@@ -141,9 +141,6 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 				rule.Params[list[1]] = list[2]
 			}
 		}
-	}
-	if rule.SplitPathInfo == nil {
-		rule.SplitPathInfo = regexp.MustCompile(`^(.+?\.php)(/.*)$`)
 	}
 	if rule.Root == "" {
 		if root := c.Get(super.DocRootKey); root != nil {

@@ -19,7 +19,6 @@ func init() {
 }
 
 func setupAccess(c *caddy.Controller) error {
-	fmt.Println("setup log")
 	cfg, err := parseConfig(c)
 	if err != nil {
 		return err

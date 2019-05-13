@@ -2,6 +2,7 @@ package fastcgi
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/caibirdme/durian/log"
 	super "github.com/caibirdme/durian/server"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -63,7 +65,6 @@ func (h *Handler) Serve(reqCtx *fasthttp.RequestCtx) {
 			log.GetLogger().Error("[fcgi] buildEnv error",
 				zap.Error(err),
 				zap.String("scriptName", pathInfo.ScriptName),
-				zap.String("scriptFileName", pathInfo.ScriptFileName),
 				zap.String("pathInfo", pathInfo.PathInfo),
 				zap.ByteString("path", reqCtx.Request.URI().Path()),
 			)
@@ -145,7 +146,7 @@ type Rule struct {
 	Root           string
 	Index          string
 	SplitPathInfo  *regexp.Regexp
-	FilenamePrefix string
+	ScriptFileName string
 	CatchStderr    string
 	Params         map[string]string
 	ServerSoftware string
@@ -157,28 +158,55 @@ func (r *Rule) Match(ctx *fasthttp.RequestCtx) bool {
 }
 
 type pathInfo struct {
-	ScriptName     string
-	ScriptFileName string
-	PathInfo       string
+	ScriptName string
+	PathInfo   string
+}
+
+var (
+	errSplitFail = errors.New("fail to split path")
+)
+
+func addExt(path string, ext string) string {
+	if strings.HasSuffix(path, ext) {
+		return path
+	}
+	if path[len(path)-1] == '/' {
+		return path + ext
+	}
+	return path + "/" + ext
 }
 
 func (r *Rule) newPathInfo(path []byte) (pathInfo, error) {
+	if r.SplitPathInfo == nil {
+		return pathInfo{
+			ScriptName: addExt(string(path), r.Index),
+		}, nil
+	}
 	matched := r.SplitPathInfo.FindSubmatch(path)
-	pInfo := pathInfo{}
 	if len(matched) < 2 {
-		pInfo.PathInfo = string(path)
-		pInfo.ScriptName = r.Index
+		return pathInfo{}, errSplitFail
+	}
+	pInfo := pathInfo{
+		ScriptName: addExt(string(matched[1]), r.Index),
 	}
 	if len(matched) >= 3 {
 		pInfo.PathInfo = string(matched[2])
-		pInfo.ScriptName = string(matched[1])
-	}
-	if r.FilenamePrefix != "" {
-		pInfo.ScriptFileName = r.FilenamePrefix + pInfo.ScriptName
-	} else {
-		pInfo.ScriptFileName = r.Root + pInfo.ScriptName
 	}
 	return pInfo, nil
+}
+
+func (r *Rule) getScriptFileName(scriptName string) string {
+	if r.ScriptFileName == "" {
+		var pre string
+		if r.Root[len(r.Root)-1] != '/' {
+			pre = r.Root + "/"
+		} else {
+			pre = r.Root
+		}
+		return pre + scriptName
+	}
+	scriptFileName := strings.Replace(r.ScriptFileName, "$document_root", r.Root, 1)
+	return strings.Replace(scriptFileName, "$fastcgi_script_name", scriptName, 1)
 }
 
 func (r *Rule) buildEnv(ctx *fasthttp.RequestCtx, pathInfo *pathInfo) (map[string]string, error) {
@@ -189,7 +217,7 @@ func (r *Rule) buildEnv(ctx *fasthttp.RequestCtx, pathInfo *pathInfo) (map[strin
 	env["REQUEST_METHOD"] = string(ctx.Method())
 	env["CONTENT_TYPE"] = string(ctx.Request.Header.ContentType())
 	env["CONTENT_LENGTH"] = strconv.Itoa(ctx.Request.Header.ContentLength())
-	env["SCRIPT_FILENAME"] = pathInfo.ScriptFileName
+	env["SCRIPT_FILENAME"] = r.getScriptFileName(pathInfo.ScriptName)
 	env["SCRIPT_NAME"] = pathInfo.ScriptName
 	env["PATH_INFO"] = pathInfo.PathInfo
 	env["REQUEST_URI"] = string(ctx.Request.URI().RequestURI())

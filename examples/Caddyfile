@@ -26,6 +26,7 @@
 
     fastcgi \.php {
         root /home/caibirdme/site
+        script_filename $document_root/index.php
         index index.php
         catch_stderr "PHP Fatal Error"
         debug

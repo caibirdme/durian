@@ -17,7 +17,6 @@ func init() {
 }
 
 func setup(c *caddy.Controller) error {
-	fmt.Println("setup upstream")
 	u, err := parseUpstream(c)
 	if err != nil {
 		return err
