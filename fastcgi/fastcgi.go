@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -151,6 +152,7 @@ type Rule struct {
 	Params         map[string]string
 	ServerSoftware string
 	ServerName     string
+	templates      sync.Map
 }
 
 func (r *Rule) Match(ctx *fasthttp.RequestCtx) bool {
