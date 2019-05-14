@@ -13,6 +13,7 @@ const (
 	// StandardContextKey use this key to access context.Context from ctx.UserValues
 	standardContextKey = "_ctx"
 	DurianName         = "durian"
+	DurianVersion      = "0.0.1"
 )
 
 type StorageKey int

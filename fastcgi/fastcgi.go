@@ -5,16 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"github.com/caibirdme/durian/log"
+	"github.com/caibirdme/durian/replace"
 	super "github.com/caibirdme/durian/server"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -59,7 +60,8 @@ func (h *Handler) Serve(reqCtx *fasthttp.RequestCtx) {
 		}
 		return
 	}
-	env, err := h.rule.buildEnv(reqCtx, &pathInfo)
+	reqCtx.SetUserValue(pathInfoKey, pathInfo)
+	env, err := h.rule.buildEnv(reqCtx)
 	if err != nil {
 		reqCtx.Error("[fcgi] internal error", fasthttp.StatusInternalServerError)
 		if h.Debug {
@@ -120,9 +122,10 @@ func (h *Handler) Serve(reqCtx *fasthttp.RequestCtx) {
 }
 
 const (
-	strGet     = "GET"
-	strHead    = "HEAD"
-	strOptions = "OPTIONS"
+	strGet      = "GET"
+	strHead     = "HEAD"
+	strOptions  = "OPTIONS"
+	pathInfoKey = "_path_info"
 )
 
 func (h *Handler) getFCGIClient(reqCtx *fasthttp.RequestCtx, network, addr string) (*FCGIClient, error) {
@@ -143,6 +146,7 @@ func (h *Handler) getFCGIClient(reqCtx *fasthttp.RequestCtx, network, addr strin
 }
 
 type Rule struct {
+	Prefix         []byte
 	Pattern        *regexp.Regexp
 	Root           string
 	Index          string
@@ -152,11 +156,14 @@ type Rule struct {
 	Params         map[string]string
 	ServerSoftware string
 	ServerName     string
-	templates      sync.Map
+	templates      *replace.VariablePlaceholder
 }
 
 func (r *Rule) Match(ctx *fasthttp.RequestCtx) bool {
-	return r.Pattern.Match(ctx.RequestURI())
+	if len(r.Prefix) > 0 {
+		return bytes.HasPrefix(ctx.URI().Path(), r.Prefix)
+	}
+	return r.Pattern.Match(ctx.URI().Path())
 }
 
 type pathInfo struct {
@@ -165,7 +172,8 @@ type pathInfo struct {
 }
 
 var (
-	errSplitFail = errors.New("fail to split path")
+	errSplitFail  = errors.New("fail to split path")
+	_headerPrefix = []byte("HTTP_")
 )
 
 func addExt(path string, ext string) string {
@@ -197,21 +205,7 @@ func (r *Rule) newPathInfo(path []byte) (pathInfo, error) {
 	return pInfo, nil
 }
 
-func (r *Rule) getScriptFileName(scriptName string) string {
-	if r.ScriptFileName == "" {
-		var pre string
-		if r.Root[len(r.Root)-1] != '/' {
-			pre = r.Root + "/"
-		} else {
-			pre = r.Root
-		}
-		return pre + scriptName
-	}
-	scriptFileName := strings.Replace(r.ScriptFileName, "$document_root", r.Root, 1)
-	return strings.Replace(scriptFileName, "$fastcgi_script_name", scriptName, 1)
-}
-
-func (r *Rule) buildEnv(ctx *fasthttp.RequestCtx, pathInfo *pathInfo) (map[string]string, error) {
+func (r *Rule) buildEnv(ctx *fasthttp.RequestCtx) (map[string]string, error) {
 	env := make(map[string]string)
 	// 详见nginx文档： https://www.nginx.com/resources/wiki/start/topics/examples/phpfcgi/
 	env["AUTH_TYPE"] = ""
@@ -219,9 +213,6 @@ func (r *Rule) buildEnv(ctx *fasthttp.RequestCtx, pathInfo *pathInfo) (map[strin
 	env["REQUEST_METHOD"] = string(ctx.Method())
 	env["CONTENT_TYPE"] = string(ctx.Request.Header.ContentType())
 	env["CONTENT_LENGTH"] = strconv.Itoa(ctx.Request.Header.ContentLength())
-	env["SCRIPT_FILENAME"] = r.getScriptFileName(pathInfo.ScriptName)
-	env["SCRIPT_NAME"] = pathInfo.ScriptName
-	env["PATH_INFO"] = pathInfo.PathInfo
 	env["REQUEST_URI"] = string(ctx.Request.URI().RequestURI())
 	env["DOCUMENT_URI"] = string(ctx.Request.URI().Path())
 	env["DOCUMENT_ROOT"] = r.Root
@@ -245,7 +236,95 @@ func (r *Rule) buildEnv(ctx *fasthttp.RequestCtx, pathInfo *pathInfo) (map[strin
 	env["SERVER_ADDR"] = ip
 	env["SERVER_PORT"] = port
 	env["SERVER_NAME"] = r.ServerName
+
+	// set custom env
+	for k, v := range r.Params {
+		realV, err := r.DoReplace(ctx, v)
+		if err != nil {
+			// todo: log
+		}
+		env[k] = realV
+	}
+	if path_info := env["PATH_INFO"]; path_info == "" {
+		delete(env, "PATH_TRANSLATED")
+		delete(env, "PATH_INFO")
+	}
+
+	// set header
+	ctx.Request.Header.VisitAll(func(k, v []byte) {
+		var sb strings.Builder
+		sb.Write(_headerPrefix)
+		sb.Write(convertHeader2EnvParam(k))
+		env[sb.String()] = string(v)
+	})
+
 	return env, nil
+}
+
+func (r *Rule) DoReplace(ctx *fasthttp.RequestCtx, tmplName string) (string, error) {
+	return r.templates.ExecuteFuncString(tmplName, func(w io.Writer, tag string) (int, error) {
+		written, err := r.ReplaceVariable(ctx, w, tag)
+		if err == nil {
+			return written, nil
+		} else if err != _errNotBuiltin {
+			return written, err
+		}
+		return replace.ReplaceVariable(ctx, w, tag)
+	})
+}
+
+var (
+	_errNotBuiltin = errors.New("not fastcgi built-in variables")
+)
+
+func (r *Rule) ReplaceVariable(ctx *fasthttp.RequestCtx, w io.Writer, tag string) (int, error) {
+	if f, ok := placeHolders[tag]; ok {
+		return f(ctx, w)
+	}
+	switch tag {
+	case "root":
+		return w.Write([]byte(r.Root))
+	default:
+		return 0, _errNotBuiltin
+	}
+}
+
+func (r *Rule) includeScriptParam() {
+	if _, ok := r.Params["SCRIPT_NAME"]; !ok {
+		r.Params["SCRIPT_NAME"] = "{fastcgi_script_name}"
+		r.templates.SetTmpl("{fastcgi_script_name}")
+	}
+	if _, ok := r.Params["SCRIPT_FILENAME"]; !ok {
+		r.Params["SCRIPT_FILENAME"] = "{root}{fastcgi_script_name}"
+		r.templates.SetTmpl("{root}{fastcgi_script_name}")
+	}
+	if _, ok := r.Params["PATH_INFO"]; !ok {
+		r.Params["PATH_INFO"] = "{fastcgi_path_info}"
+		r.templates.SetTmpl("{fastcgi_path_info}")
+	}
+	if _, ok := r.Params["PATH_TRANSLATED"]; !ok {
+		r.Params["PATH_TRANSLATED"] = "{root}{fastcgi_path_info}"
+		r.templates.SetTmpl("{root}{fastcgi_path_info}")
+	}
+}
+
+var placeHolders = map[string]replace.ReplaceFunc{
+	"fastcgi_script_name": scriptNameReplacer,
+	"fastcgi_path_info":   pathInfoReplacer,
+}
+
+func scriptNameReplacer(ctx *fasthttp.RequestCtx, w io.Writer) (int, error) {
+	pInfo := ctx.UserValue(pathInfoKey).(pathInfo)
+	return w.Write([]byte(pInfo.ScriptName))
+}
+
+func pathInfoReplacer(ctx *fasthttp.RequestCtx, w io.Writer) (int, error) {
+	pInfo := ctx.UserValue(pathInfoKey).(pathInfo)
+	return w.Write([]byte(pInfo.PathInfo))
+}
+
+func convertHeader2EnvParam(k []byte) []byte {
+	return bytes.Replace(bytes.ToUpper(k), []byte{'-'}, []byte{'_'}, -1)
 }
 
 func getAddr(addr net.Addr) (string, string, error) {

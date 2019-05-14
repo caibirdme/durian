@@ -51,3 +51,39 @@ func TestRule_newPathInfo(t *testing.T) {
 
 func TestRule_getScriptFileName(t *testing.T) {
 }
+
+func Test_convertHeader2EnvParam(t *testing.T) {
+	tests := []struct {
+		name string
+		args string
+		want string
+	}{
+		{
+			name: "one -",
+			args: "Content-Type",
+			want: "CONTENT_TYPE",
+		},
+		{
+			name: "two -",
+			args: "Foo-Bar-Baz",
+			want: "FOO_BAR_BAZ",
+		},
+		{
+			name: "zero -",
+			args: "FooBarBaz",
+			want: "FOOBARBAZ",
+		},
+		{
+			name: "empty",
+			args: "",
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertHeader2EnvParam([]byte(tt.args)); string(got) != tt.want {
+				t.Errorf("convertHeader2EnvParam() = %s, want %v", got, tt.want)
+			}
+		})
+	}
+}

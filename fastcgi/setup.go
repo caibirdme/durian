@@ -1,7 +1,7 @@
 package fastcgi
 
 import (
-	"fmt"
+	"github.com/caibirdme/durian/replace"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
@@ -25,7 +25,6 @@ type Config struct {
 }
 
 func setup(c *caddy.Controller) error {
-	fmt.Println("setup fcgi")
 	cfg, rule, err := parseFcgiCfg(c)
 	if err != nil {
 		return err
@@ -44,20 +43,29 @@ func setup(c *caddy.Controller) error {
 func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 	c.Next()
 
-	if !c.NextArg() {
-		return nil, nil, c.ArgErr()
-	}
-
 	rule := Rule{
-		Params: make(map[string]string),
+		Params:    make(map[string]string),
+		templates: replace.NewVariablePlaceholder(),
 	}
 	cfg := Config{}
 
-	pattern, err := regexp.Compile(c.Val())
-	if err != nil {
-		return nil, nil, err
+	firstLine := c.RemainingArgs()
+	if len(firstLine) == 0 {
+		return nil, nil, c.ArgErr()
 	}
-	rule.Pattern = pattern
+	if len(firstLine) == 2 {
+		if firstLine[0] == "~" {
+			pattern, err := regexp.Compile(firstLine[1])
+			if err != nil {
+				return nil, nil, err
+			}
+			rule.Pattern = pattern
+		} else {
+			return nil, nil, c.ArgErr()
+		}
+	} else {
+		rule.Prefix = []byte(firstLine[0])
+	}
 
 	for c.NextBlock() {
 		list := getLine(c)
@@ -79,16 +87,7 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 				if err != nil {
 					return nil, nil, err
 				}
-				// test correctness
-				testMatch := re.FindStringSubmatch("/foo/bar/abc.php/qq/tt/index.php")
-				if len(testMatch) != 3 || testMatch[1] != "/foo/bar/abc.php" && testMatch[2] != "/qq/tt/index.php" {
-					return nil, nil, c.Err("regexp of split_path_info isn't correct")
-				}
 				rule.SplitPathInfo = re
-			}
-		case "script_filename":
-			if len(list) > 1 {
-				rule.ScriptFileName = list[1]
 			}
 		case "catch_stderr":
 			if len(list) > 1 {
@@ -139,6 +138,7 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 		case "fcgi_param":
 			if len(list) > 2 {
 				rule.Params[list[1]] = list[2]
+				rule.templates.SetTmpl(list[2])
 			}
 		}
 	}
@@ -151,12 +151,12 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 		rule.ServerName = caddy.AppName
 	}
 	if rule.ServerSoftware == "" {
-		rule.ServerSoftware = super.DurianName
+		rule.ServerSoftware = super.DurianName + "/" + super.DurianVersion
 	}
 	if rule.Index == "" {
 		rule.Index = "index.php"
 	}
-	fmt.Printf("cfg: %+v\nrule:%+v\n", cfg, rule)
+	rule.includeScriptParam()
 	return &cfg, &rule, nil
 }
 
