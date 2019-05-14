@@ -1,7 +1,6 @@
 package upstream
 
 import (
-	"fmt"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/pkg/errors"
@@ -53,7 +52,6 @@ func parseUpstream(c *caddy.Controller) (*super.Upstream, error) {
 		if len(str_list) == 0 {
 			return nil, c.ArgErr()
 		}
-		fmt.Println("----", str_list)
 		b := super.Backend{}
 		if strings.HasPrefix(str_list[0], "unix:") {
 			b.Network = "unix"
@@ -86,6 +84,5 @@ func parseUpstream(c *caddy.Controller) (*super.Upstream, error) {
 		}
 		u.Backends = append(u.Backends, b)
 	}
-	fmt.Printf("upstream %+v\n", u)
 	return &u, nil
 }
