@@ -24,9 +24,9 @@
         unix:/var/run/php/php7.3-fpm.sock
     }
 
-    fastcgi \.php {
+    fastcgi /foo {
         root /home/caibirdme/site
-        script_filename $document_root/index.php
+        split_path_info ^(.+?\.php)(.*)$
         index index.php
         catch_stderr "PHP Fatal Error"
         debug

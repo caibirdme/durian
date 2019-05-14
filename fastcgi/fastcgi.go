@@ -74,7 +74,6 @@ func (h *Handler) Serve(reqCtx *fasthttp.RequestCtx) {
 		}
 		return
 	}
-	fmt.Println("----", env)
 	network, addr := h.GetAddress()
 	fcgi, err := h.getFCGIClient(reqCtx, network, addr)
 	if err != nil {
@@ -151,7 +150,6 @@ type Rule struct {
 	Root           string
 	Index          string
 	SplitPathInfo  *regexp.Regexp
-	ScriptFileName string
 	CatchStderr    string
 	Params         map[string]string
 	ServerSoftware string
