@@ -1,7 +1,6 @@
 package status
 
 import (
-	"bytes"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
@@ -22,11 +21,8 @@ func setup(c *caddy.Controller) error {
 	}
 	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			for _, basePath := range cfg.Paths {
-				if bytes.HasPrefix(ctx.Path(), []byte(basePath)) {
-					ctx.SetStatusCode(cfg.Code)
-					break
-				}
+			if cfg.location.Match(ctx.Path()) {
+				ctx.SetStatusCode(cfg.Code)
 			}
 			next(ctx)
 		}
@@ -35,36 +31,26 @@ func setup(c *caddy.Controller) error {
 }
 
 type StatusConfig struct {
-	Code  int
-	Paths []string
+	Code     int
+	location super.LocationMatcher
 }
 
 func parseStatus(c *caddy.Controller) (*StatusConfig, error) {
 	// skip status keyword
 	c.Next()
-	if !c.NextArg() {
-		return nil, c.ArgErr()
-	}
-	code, err := strconv.Atoi(c.Val())
+
+	firstLine := c.RemainingArgs()
+	n := len(firstLine)
+	location, err := super.NewLocationMatcher(firstLine[:n-1])
 	if err != nil {
-		return nil, c.Err("statusCode must be a valid number defined by RFC")
+		return nil, c.Err(err.Error())
 	}
-	cfg := StatusConfig{Code: code}
-	hasBlock := false
-	for c.NextBlock() {
-		hasBlock = true
-		cfg.Paths = append(cfg.Paths, c.Val())
+	code, err := strconv.Atoi(firstLine[n-1])
+	if err != nil {
+		return nil, err
 	}
-	// no block just path
-	if !hasBlock {
-		if !c.NextArg() {
-			return nil, c.Err("must specify a path")
-		} else {
-			cfg.Paths = append(cfg.Paths, c.Val())
-		}
-	}
-	if len(cfg.Paths) == 0 {
-		return nil, c.Err("must specify at least one path")
-	}
-	return &cfg, nil
+	return &StatusConfig{
+		location: location,
+		Code:     code,
+	}, nil
 }

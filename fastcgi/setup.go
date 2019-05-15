@@ -53,20 +53,11 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 	if len(firstLine) == 0 {
 		return nil, nil, c.ArgErr()
 	}
-	if len(firstLine) == 2 {
-		if firstLine[0] == "~" {
-			pattern, err := regexp.Compile(firstLine[1])
-			if err != nil {
-				return nil, nil, err
-			}
-			rule.Pattern = pattern
-		} else {
-			return nil, nil, c.ArgErr()
-		}
-	} else {
-		rule.Prefix = []byte(firstLine[0])
+	location, err := super.NewLocationMatcher(firstLine)
+	if err != nil {
+		return nil, nil, err
 	}
-
+	var excludeLocation super.LocationMatcher
 	for c.NextBlock() {
 		list := getLine(c)
 		if len(list) == 0 {
@@ -140,6 +131,11 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 				rule.Params[list[1]] = list[2]
 				rule.templates.SetTmpl(list[2])
 			}
+		case "except":
+			excludeLocation, err = super.NewLocationMatcher(c.RemainingArgs())
+			if err != nil {
+				return nil, nil, c.Err(err.Error())
+			}
 		}
 	}
 	if rule.Root == "" {
@@ -155,6 +151,11 @@ func parseFcgiCfg(c *caddy.Controller) (*Config, *Rule, error) {
 	}
 	if rule.Index == "" {
 		rule.Index = "index.php"
+	}
+	if excludeLocation != nil {
+		rule.location = super.NewCombineMatcher(location, excludeLocation)
+	} else {
+		rule.location = location
 	}
 	rule.includeScriptParam()
 	return &cfg, &rule, nil

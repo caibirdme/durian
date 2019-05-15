@@ -48,7 +48,7 @@ func NewHandler(rule *Rule, cfg *Config, next fasthttp.RequestHandler) (*Handler
 }
 
 func (h *Handler) Serve(reqCtx *fasthttp.RequestCtx) {
-	if !h.rule.Match(reqCtx) {
+	if !h.rule.location.Match(reqCtx.Path()) {
 		h.Next(reqCtx)
 		return
 	}
@@ -145,8 +145,7 @@ func (h *Handler) getFCGIClient(reqCtx *fasthttp.RequestCtx, network, addr strin
 }
 
 type Rule struct {
-	Prefix         []byte
-	Pattern        *regexp.Regexp
+	location       super.LocationMatcher
 	Root           string
 	Index          string
 	SplitPathInfo  *regexp.Regexp
@@ -155,13 +154,6 @@ type Rule struct {
 	ServerSoftware string
 	ServerName     string
 	templates      *replace.VariablePlaceholder
-}
-
-func (r *Rule) Match(ctx *fasthttp.RequestCtx) bool {
-	if len(r.Prefix) > 0 {
-		return bytes.HasPrefix(ctx.URI().Path(), r.Prefix)
-	}
-	return r.Pattern.Match(ctx.URI().Path())
 }
 
 type pathInfo struct {

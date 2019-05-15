@@ -76,3 +76,19 @@ func NewLocationMatcher(firstLine []string) (LocationMatcher, error) {
 	}
 	return &location{pattern: re}, nil
 }
+
+type combineMather struct {
+	should  LocationMatcher
+	exclude LocationMatcher
+}
+
+func (c *combineMather) Match(uri []byte) bool {
+	if c.should.Match(uri) && !c.exclude.Match(uri) {
+		return true
+	}
+	return false
+}
+
+func NewCombineMatcher(shouldMatch LocationMatcher, exclude LocationMatcher) LocationMatcher {
+	return &combineMather{should: shouldMatch, exclude: exclude}
+}
