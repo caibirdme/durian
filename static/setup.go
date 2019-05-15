@@ -1,7 +1,6 @@
 package static
 
 import (
-	"bytes"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
@@ -34,22 +33,10 @@ func setup(c *caddy.Controller) error {
 		Compress:   cfg.Compress,
 		IndexNames: cfg.Index,
 	}
-	if cfg.prefix != "/" {
-		stripper := fasthttp.NewPathPrefixStripper(len(strings.TrimRight(cfg.prefix, "/")))
-		fs.PathRewrite = func(ctx *fasthttp.RequestCtx) []byte {
-			newPath := stripper(ctx)
-			if len(newPath) == 0 {
-				return rootPath
-			} else {
-				return newPath
-			}
-		}
-	}
-	prefixBytes := []byte(cfg.prefix)
 	process := fs.NewRequestHandler()
 	srvCfg.AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			if !bytes.HasPrefix(ctx.Path(), prefixBytes) {
+			if !cfg.location.Match(ctx.Path()) {
 				next(ctx)
 			} else {
 				process(ctx)
@@ -61,7 +48,7 @@ func setup(c *caddy.Controller) error {
 }
 
 type StaticConfig struct {
-	prefix   string
+	location super.LocationMatcher
 	Root     string
 	Index    []string
 	Compress bool
@@ -71,11 +58,11 @@ func parseStatic(c *caddy.Controller, cfg *StaticConfig) error {
 	// skip root
 	c.Next()
 
-	// prefix
-	if !c.NextArg() {
-		return c.ArgErr()
+	location, err := super.NewLocationMatcher(c.RemainingArgs())
+	if err != nil {
+		return c.Err(err.Error())
 	}
-	cfg.prefix = c.Val()
+	cfg.location = location
 	hasBlock := false
 	for c.NextBlock() {
 		hasBlock = true

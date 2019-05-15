@@ -1,7 +1,6 @@
 package header
 
 import (
-	"bytes"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
@@ -19,12 +18,12 @@ func setup(c *caddy.Controller) error {
 	if err != nil {
 		return err
 	}
-	pathPrefixBytes := []byte(cfg.Path)
+	h := NewHeaderSetter(cfg.Headers)
 	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			if bytes.HasPrefix(ctx.Path(), pathPrefixBytes) {
-				for _, pair := range cfg.Headers {
-					ctx.Request.Header.Set(pair.K, pair.V)
+			if cfg.location.Match(ctx.Path()) {
+				if err := h.Set(ctx); err != nil {
+					// todo: log
 				}
 			}
 			next(ctx)
@@ -34,8 +33,8 @@ func setup(c *caddy.Controller) error {
 }
 
 type HeaderConfig struct {
-	Path    string
-	Headers []super.KVTuple
+	location super.LocationMatcher
+	Headers  []super.KVTuple
 }
 
 // header path k v
@@ -47,10 +46,16 @@ type HeaderConfig struct {
 func parseHeader(c *caddy.Controller) (*HeaderConfig, error) {
 	c.Next()
 
-	if !c.NextArg() {
+	firstLine := c.RemainingArgs()
+	if len(firstLine) == 0 {
 		return nil, c.ArgErr()
 	}
-	cfg := HeaderConfig{Path: c.Val()}
+	var cfg HeaderConfig
+	var err error
+	cfg.location, err = super.NewLocationMatcher(firstLine)
+	if err != nil {
+		return nil, err
+	}
 
 	hasBlock := false
 	for c.NextBlock() {

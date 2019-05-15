@@ -8,31 +8,16 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func ProxyHandler(next fasthttp.RequestHandler) fasthttp.RequestHandler {
-	return func(reqCtx *fasthttp.RequestCtx) {
-	}
-}
-
 type Proxy struct {
 	next             fasthttp.RequestHandler
 	client           *fasthttp.HostClient
-	check            URLMatchChecker
+	location         super.LocationMatcher
 	timeout          time.Duration
 	headerUpstream   []super.KVTuple
 	headerDownstream []super.KVTuple
 }
 
 func NewProxy(cfg ProxyConfig) (*Proxy, error) {
-	var checker URLMatchChecker
-	var err error
-	if cfg.Pattern != "" {
-		checker, err = NewRegexpMatcher(cfg.Pattern)
-	} else {
-		checker, err = NewPrefixChecker(cfg.Path)
-	}
-	if nil != err {
-		return nil, err
-	}
 	addr := strings.Join(cfg.AddressList, ",")
 	client := &fasthttp.HostClient{
 		Addr: addr,
@@ -41,8 +26,8 @@ func NewProxy(cfg ProxyConfig) (*Proxy, error) {
 		client.SetMaxConns(cfg.MaxConn)
 	}
 	return &Proxy{
+		location:         cfg.location,
 		client:           client,
-		check:            checker,
 		timeout:          cfg.Timeout,
 		headerUpstream:   cfg.UpstreamHeader,
 		headerDownstream: cfg.DownstreamHeader,
@@ -51,7 +36,7 @@ func NewProxy(cfg ProxyConfig) (*Proxy, error) {
 
 func (p *Proxy) Handle(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(reqCtx *fasthttp.RequestCtx) {
-		if !p.check.Match(reqCtx.Path()) {
+		if !p.location.Match(reqCtx.Path()) {
 			next(reqCtx)
 			return
 		}

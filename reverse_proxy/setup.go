@@ -34,8 +34,7 @@ func setup(c *caddy.Controller) error {
 }
 
 type ProxyConfig struct {
-	Pattern          string
-	Path             string
+	location         super.LocationMatcher
 	AddressList      []string
 	UpstreamHeader   []super.KVTuple
 	DownstreamHeader []super.KVTuple
@@ -48,11 +47,14 @@ var (
 )
 
 func parseProxy(c *caddy.Controller) (*ProxyConfig, error) {
-	// proxy
-	if !c.NextArg() {
-		return nil, c.ArgErr()
-	}
+	c.Next()
 	cfg := ProxyConfig{Timeout: defaultTimeout}
+	firstLine := c.RemainingArgs()
+	location, err := super.NewLocationMatcher(firstLine)
+	if err != nil {
+		return nil, err
+	}
+	cfg.location = location
 	for c.NextBlock() {
 		kind := c.Val()
 		err := parseKind(kind, &cfg, c)
@@ -90,22 +92,6 @@ func parseKind(kind string, cfg *ProxyConfig, c *caddy.Controller) error {
 		if nil != err {
 			return err
 		}
-	case "pattern":
-		if !c.NextArg() {
-			return c.Errf("[%s] need pattern value", pluginName)
-		}
-		if cfg.Path != "" {
-			return c.Err("path and pattern is exclusively required")
-		}
-		cfg.Pattern = c.Val()
-	case "path":
-		if !c.NextArg() {
-			return c.Err("need path value")
-		}
-		if cfg.Pattern != "" {
-			return c.Err("path and pattern is exclusively required")
-		}
-		cfg.Path = c.Val()
 	case "max_conn":
 		if !c.NextArg() {
 			return c.Err("need path value")

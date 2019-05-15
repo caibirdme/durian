@@ -1,11 +1,11 @@
 package router
 
 import (
-	"sync"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
 	"strings"
+	"sync"
 )
 
 type RegisterFunc func(cfg RouterConfig) (fasthttp.RequestHandler, error)
@@ -22,8 +22,8 @@ func RegisterPlugin(fn RegisterFunc) {
 
 func Init() {
 	caddy.RegisterPlugin(super.DirectiveRouter, caddy.Plugin{
-		ServerType:super.FastHTTPServerType,
-		Action:setup,
+		ServerType: super.FastHTTPServerType,
+		Action:     setup,
 	})
 }
 
@@ -36,7 +36,7 @@ func setup(c *caddy.Controller) error {
 	if err != nil {
 		return err
 	}
-	super.GetConfig(c).AddNamedMiddleware(super.RouterMiddlewareName, func (next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	super.GetConfig(c).AddNamedMiddleware(super.RouterMiddlewareName, func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return handler
 	})
 	return nil

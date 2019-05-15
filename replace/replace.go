@@ -40,6 +40,12 @@ func (vp *VariablePlaceholder) ExecuteFuncString(tmplName string, fn TagFunc) (s
 	return tmpl.(*fasttemplate.Template).ExecuteFuncString(fn), nil
 }
 
+func (vp *VariablePlaceholder) ExecuteString(tmplName string, ctx *fasthttp.RequestCtx) (string, error) {
+	return vp.ExecuteFuncString(tmplName, func(w io.Writer, tag string) (int, error) {
+		return ReplaceVariable(ctx, w, tag)
+	})
+}
+
 func (vp *VariablePlaceholder) SetTmpl(tmplName string) {
 	vp.templates.Store(tmplName, fasttemplate.New(tmplName, "{", "}"))
 }

@@ -1,11 +1,10 @@
 package response
 
 import (
-	"bytes"
-	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/caibirdme/durian/header"
 	super "github.com/caibirdme/durian/server"
 	"github.com/mholt/caddy"
 	"github.com/valyala/fasthttp"
@@ -24,8 +23,7 @@ func init() {
 }
 
 type RespConfig struct {
-	Path        string
-	Pattern     string
+	location    super.LocationMatcher
 	Code        int
 	Body        string
 	ContentType string
@@ -37,28 +35,16 @@ func setup(c *caddy.Controller) error {
 	if err != nil {
 		return err
 	}
-	var re *regexp.Regexp
-	if cfg.Pattern != "" {
-		re, err = regexp.Compile(cfg.Pattern)
-		if err != nil {
-			return err
-		}
-	}
-	prefixBytes := []byte(cfg.Path)
+	h := header.NewHeaderSetter(cfg.Headers)
 	super.GetConfig(c).AddMiddleware(func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			if re != nil {
-				if re.Match(ctx.Path()) {
-					outputDirectly(ctx, cfg)
-				} else {
-					next(ctx)
+			if cfg.location.Match(ctx.Path()) {
+				if err := h.Set(ctx); err != nil {
+					// todo: log
 				}
+				outputDirectly(ctx, cfg)
 			} else {
-				if bytes.HasPrefix(ctx.Path(), prefixBytes) {
-					outputDirectly(ctx, cfg)
-				} else {
-					next(ctx)
-				}
+				next(ctx)
 			}
 		}
 	})
@@ -69,9 +55,6 @@ func outputDirectly(ctx *fasthttp.RequestCtx, cfg *RespConfig) {
 	ctx.SetStatusCode(cfg.Code)
 	ctx.SetBodyString(cfg.Body)
 	ctx.SetContentType(cfg.ContentType)
-	for _, item := range cfg.Headers {
-		ctx.Response.Header.Set(item.K, item.V)
-	}
 }
 
 func parseCfg(c *caddy.Controller) (*RespConfig, error) {
@@ -81,6 +64,12 @@ func parseCfg(c *caddy.Controller) (*RespConfig, error) {
 		Code:        defaultStatusCode,
 		ContentType: defaultContentType,
 	}
+	firstLie := c.RemainingArgs()
+	location, err := super.NewLocationMatcher(firstLie)
+	if err != nil {
+		return nil, err
+	}
+	cfg.location = location
 	for c.NextBlock() {
 		kind := c.Val()
 		switch strings.ToLower(kind) {
@@ -109,26 +98,7 @@ func parseCfg(c *caddy.Controller) (*RespConfig, error) {
 				return nil, c.ArgErr()
 			}
 			cfg.Headers = append(cfg.Headers, super.KVTuple{K: k, V: v})
-		case "pattern":
-			if !c.NextArg() {
-				return nil, c.ArgErr()
-			}
-			if cfg.Path != "" {
-				return nil, c.Errf("pattern and path is exclusive")
-			}
-			cfg.Pattern = c.Val()
-		case "path":
-			if !c.NextArg() {
-				return nil, c.ArgErr()
-			}
-			if cfg.Pattern != "" {
-				return nil, c.Errf("pattern and path is exclusive")
-			}
-			cfg.Path = c.Val()
 		}
-	}
-	if cfg.Path == "" && cfg.Pattern == "" {
-		return nil, c.Err("must specify path or pattern")
 	}
 	return &cfg, nil
 }

@@ -36,11 +36,11 @@ func main() {
 // 你自己的业务逻辑，这个里就是你自己通常代码里的main
 func handler(cfg router.RouterConfig) (fasthttp.RequestHandler, error) {
 	/*
-	可以在Caddyfile中指定业务配置文件的路径，之后就能从cfg参数里取到
-	router {
-		config /home/tom/cfg.toml
-	}
-	 */
+		可以在Caddyfile中指定业务配置文件的路径，之后就能从cfg参数里取到
+		router {
+			config /home/tom/cfg.toml
+		}
+	*/
 
 	// your config file path, you can decode it
 	_ = cfg.CfgPath
